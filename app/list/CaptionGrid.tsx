@@ -1,20 +1,34 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase";
+import CaptionCard from "./CaptionCard";
+import { motion } from "framer-motion";
 
 const PAGE_SIZE = 24;
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06 },
+  },
+};
 
 export default function CaptionGrid() {
   const [page, setPage] = useState(0);
   const [captions, setCaptions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadMore();
   }, []);
 
   async function loadMore() {
-    const { data } = await supabase
+    if (loading) return;
+    setLoading(true);
+
+    const { data, error } = await supabase
       .from("captions")
       .select(`
         id,
@@ -31,17 +45,29 @@ export default function CaptionGrid() {
         page * PAGE_SIZE + PAGE_SIZE - 1
       );
 
-    if (data) {
-      setCaptions((prev) => [...prev, ...data]);
+    if (!error && data) {
+        setCaptions((prev) => {
+          const seen = new Set<string>();
+          return [...prev, ...data].filter((item) => {
+            if (seen.has(item.id)) return false;
+            seen.add(item.id);
+            return true;
+          });
+        });
       setPage((p) => p + 1);
     }
+
+    setLoading(false);
   }
 
   return (
     <main style={{ padding: 40 }}>
-      <h1>Captions</h1>
+      <h1 style={{ fontSize: 32, marginBottom: 24 }}>Captions</h1>
 
-      <div
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
@@ -49,21 +75,30 @@ export default function CaptionGrid() {
         }}
       >
         {captions.map((c) => (
-          <div key={c.id}>
-            {c.images?.url && (
-              <img
-                src={c.images.url}
-                style={{ width: "100%", height: 220, objectFit: "cover" }}
-              />
-            )}
-            <p>{c.content}</p>
-          </div>
+          <CaptionCard
+            key={c.id}
+            imageUrl={c.images?.url}
+            content={c.content}
+            likes={c.like_count}
+          />
         ))}
-      </div>
+      </motion.div>
 
-      <button onClick={loadMore} style={{ marginTop: 32 }}>
-        View more
-      </button>
+      <div style={{ textAlign: "center", marginTop: 40 }}>
+        <button
+          onClick={loadMore}
+          disabled={loading}
+          style={{
+            padding: "12px 24px",
+            borderRadius: 20,
+            border: "none",
+            cursor: "pointer",
+            fontSize: 16,
+          }}
+        >
+          {loading ? "Loading..." : "View more"}
+        </button>
+      </div>
     </main>
   );
 }
