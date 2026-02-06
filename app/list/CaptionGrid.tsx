@@ -3,17 +3,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import CaptionCard from "./CaptionCard";
-import { motion } from "framer-motion";
 
 const PAGE_SIZE = 24;
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.06 },
-  },
-};
 
 export default function CaptionGrid() {
   const [page, setPage] = useState(0);
@@ -22,6 +13,7 @@ export default function CaptionGrid() {
 
   useEffect(() => {
     loadMore();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadMore() {
@@ -40,20 +32,10 @@ export default function CaptionGrid() {
       `)
       .eq("is_public", true)
       .order("created_datetime_utc", { ascending: false })
-      .range(
-        page * PAGE_SIZE,
-        page * PAGE_SIZE + PAGE_SIZE - 1
-      );
+      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
 
     if (!error && data) {
-        setCaptions((prev) => {
-          const seen = new Set<string>();
-          return [...prev, ...data].filter((item) => {
-            if (seen.has(item.id)) return false;
-            seen.add(item.id);
-            return true;
-          });
-        });
+      setCaptions((prev) => [...prev, ...data]);
       setPage((p) => p + 1);
     }
 
@@ -64,25 +46,22 @@ export default function CaptionGrid() {
     <main style={{ padding: 40 }}>
       <h1 style={{ fontSize: 32, marginBottom: 24 }}>Captions</h1>
 
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
+      <div
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
           gap: 20,
         }}
       >
-        {captions.map((c) => (
+        {captions.map((c, idx) => (
           <CaptionCard
-            key={c.id}
+            key={`${c.id}-${idx}`}
             imageUrl={c.images?.url}
             content={c.content}
             likes={c.like_count}
           />
         ))}
-      </motion.div>
+      </div>
 
       <div style={{ textAlign: "center", marginTop: 40 }}>
         <button
