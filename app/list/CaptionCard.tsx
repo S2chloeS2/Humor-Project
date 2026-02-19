@@ -3,13 +3,21 @@
 import { motion } from "framer-motion";
 
 export default function CaptionCard({
+  captionId,
   imageUrl,
   content,
   likes,
+  isLoggedIn,
+  userVote,
+  onVote,
 }: {
+  captionId: number;
   imageUrl?: string;
   content: string;
   likes: number;
+  isLoggedIn: boolean;
+  userVote: number | null;
+  onVote: (captionId: number, vote: number) => void;
 }) {
   return (
     <motion.div
@@ -59,41 +67,72 @@ export default function CaptionCard({
         </div>
       )}
 
-      {/* Hover Overlay */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        whileHover={{ opacity: 1 }}
-        transition={{ duration: 0.2 }}
-        style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "linear-gradient(to top, rgba(0,0,0,0.8), transparent)",
-          padding: 16,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "flex-end",
-        }}
-      >
+      {/* Caption info & vote buttons */}
+      <div style={{ padding: 16 }}>
         <p
           style={{
             color: "white",
-            marginBottom: 6,
+            marginBottom: 8,
             fontSize: 14,
             lineHeight: 1.4,
           }}
         >
           {content}
         </p>
-        <span
+
+        <div
           style={{
-            color: "#9ef5c3",
-            fontSize: 13,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
           }}
         >
-          ♥ {likes}
-        </span>
-      </motion.div>
+          <span style={{ color: "#9ef5c3", fontSize: 13 }}>
+            &#9829; {likes}
+          </span>
+
+          {isLoggedIn && (
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onVote(captionId, 1);
+                }}
+                style={{
+                  background: userVote === 1 ? "#22c55e" : "#333",
+                  color: userVote === 1 ? "#fff" : "#aaa",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "4px 12px",
+                  cursor: "pointer",
+                  fontSize: 16,
+                  transition: "background 0.2s, color 0.2s",
+                }}
+              >
+                &#9650;
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onVote(captionId, -1);
+                }}
+                style={{
+                  background: userVote === -1 ? "#ef4444" : "#333",
+                  color: userVote === -1 ? "#fff" : "#aaa",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "4px 12px",
+                  cursor: "pointer",
+                  fontSize: 16,
+                  transition: "background 0.2s, color 0.2s",
+                }}
+              >
+                &#9660;
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </motion.div>
   );
 }
