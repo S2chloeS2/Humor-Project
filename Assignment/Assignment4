@@ -1,0 +1,17 @@
+Week 4: Mutating Data
+Assignment
+Due date
+2/20/2026, 3:30:00 PM EST
+In this assignment, you will extend your existing app from Assignment #3 by adding functionality that allows logged-in users to “rate” captions. This means users should be able to interact with captions and submit a vote (for example, upvote or downvote), and your app should store that vote in the database.
+
+
+The key goal of this assignment is to practice mutating data, which means creating new rows in your database rather than just reading existing data. Specifically, when a user submits a vote, your app should insert a new row into the caption_votes table that records the user’s vote and associates it with the correct caption. Because mutating data requires authentication, you must ensure that only logged-in users are able to submit votes. If a user is not logged in, they should not be able to rate captions. Your app should use the authentication system you implemented previously to enforce this.
+
+
+The purpose of this assignment is to help you understand how modern web apps allow users to create and modify data, not just display it.
+
+
+Note: Please do not update/enable/disable any RLS policies in Supabase.
+
+
+When you are finished, deploy your app to Vercel and submit the commit-specific URL of your deployment in the Submissions section.

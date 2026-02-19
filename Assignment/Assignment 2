@@ -1,0 +1,46 @@
+Assignment
+Due date
+2/6/2026, 3:45:00 PM EST
+In this assignment, you will extend the app you deployed in Assignment #1 so that it reads data from Supabase and renders it on a list page, then redeploys to Vercel.
+
+
+
+
+Continue from your existing GitHub repository. Use the same Next.js app you created in Assignment #1.
+
+
+
+
+Connect your app to Supabase. Store your Supabase URL and anon key in environment variables (do not hardcode them).
+
+
+
+
+Supabase anon key:
+
+
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpaHNnbmZqcW1ram1vb3d5ZmJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1Mjc0MDAsImV4cCI6MjA2NTEwMzQwMH0.c9UQS_o2bRygKOEdnuRx7x7PeSf_OUGDtf9l3fMqMSQ
+
+Supabase project ID:
+
+
+qihsgnfjqmkjmoowyfbn
+
+
+
+Read from a pre-existing Supabase table of your choice (do not create a new table). Fetch rows from the table.
+
+
+
+
+Render a list page. Display the rows returned from Supabase in a list, table, or card format.
+
+
+
+
+Commit and push your changes to GitHub. Deploy the changes to Vercel.
+
+
+
+
+Submit the commit-specific URL of your Vercel app in the “Submissions” section.

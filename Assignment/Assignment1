@@ -1,0 +1,25 @@
+Assignment
+Due date
+1/30/2026, 3:30:00 PM EST
+Get a simple ‘Hello World’ app deployed on Vercel:
+
+
+
+Create a new GitHub repository.
+
+Clone that GitHub repository using IntelliJ
+
+Create a new NextJS app with your favorite CLI tool.
+
+Commit your changes to GitHub.
+
+Create a new project in Vercel and connect it to your new GitHub repository.
+
+Make sure your app is successfully deployed in Vercel.
+
+Turn off Vercel “deployment protection” so that you can view your page in Incognito Mode.
+
+Submit the commit-specific URL of your Vercel app in the “Submissions” section.
+
+
+Note: Due date extended for students who recently joined the class.

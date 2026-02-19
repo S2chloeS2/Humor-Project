@@ -1,0 +1,37 @@
+Assignment
+Due date
+2/16/2026, 11:59:00 PM EST
+Required viewing: https://youtu.be/996OiexHze0?si=AKZX3uSA8TgESCx2
+
+
+Extend your app from assignment #2. Update it so that it protects a given route and shows a gated UI.
+
+
+Here’s our Google OAuth Client ID:
+
+
+388960353527-fh4grc6mla425lg0e3g1hh67omtrdihd.apps.googleusercontent.com
+
+The assignment can/should be done without a Google Client Secret.
+
+
+Be sure that your redirect URI is /auth/callback in your application.
+
+
+Make sure you are redirecting to /auth/callback, not any other route with any other query parameters.
+
+
+I suggest using the following NodeJS packages:
+
+
+
+@supabase/ssr (server/browser auth client wiring)
+
+@supabase/supabase-js (Auth API calls)
+
+
+Note: Please do not update/enable/disable any RLS policies in Supabase.
+
+
+Submit the commit-specific URL of your Vercel app in the “Submissions” section.
+
