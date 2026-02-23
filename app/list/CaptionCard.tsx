@@ -11,13 +11,13 @@ export default function CaptionCard({
   userVote,
   onVote,
 }: {
-  captionId: number;
+  captionId: string;
   imageUrl?: string;
   content: string;
   likes: number;
   isLoggedIn: boolean;
   userVote: number | null;
-  onVote: (captionId: number, vote: number) => void;
+  onVote: (captionId: string, vote: number) => void;
 }) {
   return (
     <motion.div

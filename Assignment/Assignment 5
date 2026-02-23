@@ -1,0 +1,221 @@
+Week 5: Making REST API Calls
+Assignment
+Due date
+3/1/2026, 11:59:00 PM EST
+Iterate on your application from assignment #4.
+
+
+In this assignment you will get your app to upload images and show resulting captions. This will be done by sending POST request to our staging REST API: https://api.almostcrackd.ai.
+
+
+How to Call the Caption Pipeline API
+
+Use this base URL for all API calls: https://api.almostcrackd.ai
+
+
+You will make requests in this order:
+
+
+
+Generate a presigned upload URL
+
+Upload image bytes to that presigned URL
+
+Register the uploaded image URL with the pipeline
+
+Generate captions from the registered image
+
+
+Requirements
+
+
+A valid JWT access token
+
+Include auth header on API routes:
+
+Authorization: Bearer <your-token>
+
+
+
+Supported image content types:
+
+image/jpeg, image/jpg, image/png, image/webp, image/gif, image/heic
+
+
+
+
+Step 1: Generate Presigned URL
+
+Request
+
+POST https://api.almostcrackd.ai/pipeline/generate-presigned-url
+
+
+Headers:
+
+
+Authorization: Bearer <your-token>
+Content-Type: application/json
+
+Body:
+
+
+{
+  "contentType": "image/jpeg"
+}
+
+Response
+
+{
+  "presignedUrl": "https://....",
+  "cdnUrl": "https://presigned-url-uploads.almostcrackd.ai/<userId>/<filename>.jpg"
+}
+
+
+presignedUrl: direct upload target (S3 signed URL)
+
+cdnUrl: public URL of the uploaded image (used in Step 3)
+
+
+Step 2: Upload Image Bytes to presignedUrl
+
+This is a PUT request directly to the returned presignedUrl (not to api.almostcrackd.ai).
+
+
+await fetch(presignedUrl, {
+  method: "PUT",
+  headers: {
+    "Content-Type": file.type
+  },
+  body: file
+});
+
+Important: Content-Type should match what you sent in Step 1.
+
+
+Step 3: Register Image URL in the Pipeline
+
+Request
+
+POST https://api.almostcrackd.ai/pipeline/upload-image-from-url
+
+
+Headers:
+
+
+Authorization: Bearer <your-token>
+Content-Type: application/json
+
+Body:
+
+
+{
+  "imageUrl": "<cdnUrl from Step 1>",
+  "isCommonUse": false
+}
+
+Response
+
+{
+  "imageId": "uuid-value",
+  "now": 1738690000000
+}
+
+Save imageId for the caption step.
+
+
+Step 4: Generate Captions
+
+Request
+
+POST https://api.almostcrackd.ai/pipeline/generate-captions
+
+
+Headers:
+
+
+Authorization: Bearer <your-token>
+Content-Type: application/json
+
+Body:
+
+
+{
+  "imageId": "uuid-value-from-step-3"
+}
+
+Response
+
+Returns an array of caption records generated and saved by the system.
+
+
+Turn off Vercel “deployment protection” so that you can view your page in Incognito Mode.
+
+
+Submit the commit-specific URL of your Vercel app in the “Submissions” section.
+
+
+Don’t forget to do your humor study for the week!
+
+
+Project 1 Rubric:
+
+
+Project 1 Rubric (100 points total)
+
+
+1. Functionality (50 pts)
+
+Criteria	Points	Description
+End-to-end app works correctly	15 pts	App loads successfully and core workflow functions without crashes or blocking bugs. Users can view captions, interact with the app, and complete the intended flow.
+Database integration (Supabase)	10 pts	App correctly connects to Supabase, fetches data, and mutates data.
+Authentication and route protection	10 pts	Login/logout works correctly. Auth-gated functionality is properly protected and visible only when appropriate.
+Voting (data mutation) works correctly	10 pts	Users can vote and votes persist correctly in the database. Proper handling of logged-in vs. logged-out users.
+Deployment and production readiness	5 pts	Successfully deployed on Vercel. App loads reliably via public URL. No deployment-blocking errors.
+
+Functionality Subtotal: 50 pts
+
+
+
+2. UI / UX (20 pts)
+
+Criteria	Points	Description
+Visual design and layout quality	10 pts	Clean, readable, and visually appealing layout. Reasonable spacing and styling.
+Usability and intuitiveness	10 pts	Easy to understand and navigate without clear instructions. Clear affordances and logical flow.
+
+UI / UX Subtotal: 20 pts
+
+
+
+3. Feature Completeness (15 pts)
+
+Criteria	Points	Description
+Required features implemented correctly	10 pts	All required features are present and behave as expected in the live app.
+Proper API and backend integration	3 pts	App clearly uses Supabase and required APIs correctly. Data is not hardcoded or simulated.
+No shortcuts or broken implementation	2 pts	No placeholder functionality or incomplete flows.
+
+Feature Completeness Subtotal: 15 pts
+
+
+
+4. Assignment Completion Credit (15 pts)
+
+Assignment	Points
+Assignment 1	3 pts
+Assignment 2	3 pts
+Assignment 3	3 pts
+Assignment 4	3 pts
+Assignment 5	3 pts
+
+Assignment Completion Subtotal: 15 pts
+
+
+
+5. Bonus + Penalties
+
+Item	Points
+Exceptionally creative, polished, or standout app	Up to +5 pts
+Site is not publicly accessible	Up to -X pts
+Deployment protection enabled	Penalty
+Required backend functionality is non-functional	Penalty
+Authentication is bypassed or non-functional	Penalty

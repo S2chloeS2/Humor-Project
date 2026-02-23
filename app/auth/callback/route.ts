@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login`);
   }
 
-  const response = NextResponse.redirect(`${origin}/dashboard`);
+  const response = NextResponse.redirect(`${origin}/list`);
 
   for (const { name, value, options } of cookiesToSet) {
     response.cookies.set(name, value, options);

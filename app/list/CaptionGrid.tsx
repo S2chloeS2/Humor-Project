@@ -11,7 +11,7 @@ export default function CaptionGrid() {
   const [captions, setCaptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [userVotes, setUserVotes] = useState<Record<number, number>>({});
+  const [userVotes, setUserVotes] = useState<Record<string, number>>({});
 
   const supabase = createClient();
 
@@ -26,7 +26,7 @@ export default function CaptionGrid() {
           .select("caption_id, vote")
           .eq("user_id", user.id);
         if (votes) {
-          const voteMap: Record<number, number> = {};
+          const voteMap: Record<string, number> = {};
           votes.forEach((v: any) => {
             voteMap[v.caption_id] = v.vote;
           });
@@ -65,7 +65,7 @@ export default function CaptionGrid() {
     setLoading(false);
   }
 
-  async function handleVote(captionId: number, vote: number) {
+  async function handleVote(captionId: string, vote: number) {
     if (!userId) return;
 
     const existingVote = userVotes[captionId];
