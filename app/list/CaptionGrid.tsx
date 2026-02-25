@@ -96,14 +96,21 @@ export default function CaptionGrid() {
       // Update existing vote
       ({ error } = await supabase
         .from("caption_votes")
-        .update({ vote_value: vote })
+        .update({ vote_value: vote, modified_datetime_utc: new Date().toISOString() })
         .eq("profile_id", userId)
         .eq("caption_id", captionId));
     } else {
       // Insert new vote
+      const now = new Date().toISOString();
       ({ error } = await supabase
         .from("caption_votes")
-        .insert({ profile_id: userId, caption_id: captionId, vote_value: vote }));
+        .insert({
+          profile_id: userId,
+          caption_id: captionId,
+          vote_value: vote,
+          created_datetime_utc: now,
+          modified_datetime_utc: now,
+        }));
     }
 
     // 3. Rollback UI on failure

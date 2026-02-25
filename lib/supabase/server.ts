@@ -13,10 +13,20 @@ export async function createClient() {
           return cookieStore.get(name)?.value;
         },
         set(name: string, value: string, options: any) {
-          cookieStore.set({ name, value, ...options });
+          try {
+            cookieStore.set({ name, value, ...options });
+          } catch {
+            // Called from a Server Component — cookie writes are not allowed here.
+            // Safe to ignore: session reads (.getUser) still work correctly.
+          }
         },
         remove(name: string, options: any) {
-          cookieStore.set({ name, value: "", ...options });
+          try {
+            cookieStore.set({ name, value: "", ...options });
+          } catch {
+            // Called from a Server Component — cookie writes are not allowed here.
+            // Safe to ignore: session reads (.getUser) still work correctly.
+          }
         },
       },
     }
