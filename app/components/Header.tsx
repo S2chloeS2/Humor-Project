@@ -5,6 +5,15 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import SignOutButton from "@/app/dashboard/SignOutButton";
 
+const NAV_LINK_STYLE: React.CSSProperties = {
+  fontSize: 14,
+  color: "#6b7280",
+  textDecoration: "none",
+  padding: "6px 10px",
+  borderRadius: 6,
+  transition: "color 0.15s",
+};
+
 export default function Header({ email: initialEmail }: { email: string | null }) {
   const [email, setEmail] = useState(initialEmail);
 
@@ -21,27 +30,93 @@ export default function Header({ email: initialEmail }: { email: string | null }
   }, []);
 
   return (
-    <header className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
-      <Link href="/" className="text-lg font-semibold">
-        Humor Project
+    <header
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "0 40px",
+        height: 60,
+        borderBottom: "1px solid #1f2937",
+        position: "sticky",
+        top: 0,
+        background: "#0a0a0a",
+        zIndex: 50,
+      }}
+    >
+      {/* Logo */}
+      <Link
+        href="/"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          textDecoration: "none",
+        }}
+      >
+        <span
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            background: "#22c55e",
+            display: "inline-block",
+            flexShrink: 0,
+          }}
+        />
+        <span
+          style={{
+            fontSize: 15,
+            fontWeight: 600,
+            color: "#ededed",
+            letterSpacing: "-0.01em",
+          }}
+        >
+          Humor Project
+        </span>
       </Link>
 
-      <nav className="flex items-center gap-4">
-        <Link href="/list" className="text-sm text-gray-400 hover:text-white transition-colors">
+      {/* Nav */}
+      <nav style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <Link href="/list" style={NAV_LINK_STYLE}>
           Captions
         </Link>
+
         {email ? (
           <>
-            <Link href="/upload" className="text-sm text-gray-400 hover:text-white transition-colors">
+            <Link href="/upload" style={NAV_LINK_STYLE}>
               Upload
             </Link>
-            <span className="text-sm text-gray-400">{email}</span>
+            <span
+              style={{
+                fontSize: 12,
+                color: "#4b5563",
+                margin: "0 6px",
+                maxWidth: 180,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {email}
+            </span>
             <SignOutButton />
           </>
         ) : (
           <Link
             href="/login"
-            className="rounded-md bg-white px-4 py-2 text-sm text-black hover:bg-gray-200"
+            style={{
+              fontSize: 14,
+              fontWeight: 500,
+              color: "#ededed",
+              background: "transparent",
+              border: "1px solid #374151",
+              borderRadius: 8,
+              padding: "6px 16px",
+              textDecoration: "none",
+              marginLeft: 4,
+              transition: "border-color 0.15s",
+            }}
           >
             Login
           </Link>

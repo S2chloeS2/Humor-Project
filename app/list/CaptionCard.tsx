@@ -24,27 +24,27 @@ export default function CaptionCard({
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{
-        scale: 1.04,
-        boxShadow: "0 20px 40px rgba(0,255,150,0.25)",
+        scale: 1.02,
+        boxShadow: "0 16px 40px rgba(34,197,94,0.12)",
       }}
       transition={{ type: "spring", stiffness: 260, damping: 20 }}
       style={{
         background: "#111",
+        border: "1px solid #1f2937",
         borderRadius: 16,
         overflow: "hidden",
         position: "relative",
         cursor: "pointer",
       }}
     >
-      {typeof imageUrl === "string" &&
-      imageUrl.startsWith("http") ? (
+      {/* Image */}
+      {typeof imageUrl === "string" && imageUrl.startsWith("http") ? (
         <img
           src={imageUrl}
           alt=""
           loading="lazy"
           onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.display =
-              "none";
+            (e.currentTarget as HTMLImageElement).style.display = "none";
           }}
           style={{
             width: "100%",
@@ -59,22 +59,24 @@ export default function CaptionCard({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: "#777",
-            fontSize: 14,
+            background: "#0d1f14",
+            color: "#4b5563",
+            fontSize: 13,
           }}
         >
-          No Image
+          No image
         </div>
       )}
 
-      {/* Caption info & vote buttons */}
-      <div style={{ padding: 16 }}>
+      {/* Content */}
+      <div style={{ padding: 20 }}>
         <p
           style={{
-            color: "white",
-            marginBottom: 8,
+            color: "#e5e7eb",
+            marginBottom: 12,
             fontSize: 14,
-            lineHeight: 1.4,
+            lineHeight: 1.6,
+            margin: "0 0 12px 0",
           }}
         >
           {content}
@@ -87,29 +89,31 @@ export default function CaptionCard({
             justifyContent: "space-between",
           }}
         >
-          <span style={{ color: "#9ef5c3", fontSize: 13 }}>
-            &#9829; {likes}
+          {/* Like count */}
+          <span style={{ color: "#9ef5c3", fontSize: 13, fontWeight: 500 }}>
+            ♥ {likes}
           </span>
 
+          {/* Vote buttons — only for logged-in users */}
           {isLoggedIn && (
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: 6 }}>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onVote(captionId, 1);
                 }}
                 style={{
-                  background: userVote === 1 ? "#22c55e" : "#333",
-                  color: userVote === 1 ? "#fff" : "#aaa",
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "4px 12px",
+                  background: userVote === 1 ? "#22c55e" : "transparent",
+                  color: userVote === 1 ? "#000" : "#6b7280",
+                  border: `1px solid ${userVote === 1 ? "#22c55e" : "#374151"}`,
+                  borderRadius: 6,
+                  padding: "4px 10px",
                   cursor: "pointer",
-                  fontSize: 16,
-                  transition: "background 0.2s, color 0.2s",
+                  fontSize: 14,
+                  transition: "background 0.2s, color 0.2s, border-color 0.2s",
                 }}
               >
-                &#9650;
+                ▲
               </button>
               <button
                 onClick={(e) => {
@@ -117,17 +121,17 @@ export default function CaptionCard({
                   onVote(captionId, -1);
                 }}
                 style={{
-                  background: userVote === -1 ? "#ef4444" : "#333",
-                  color: userVote === -1 ? "#fff" : "#aaa",
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "4px 12px",
+                  background: userVote === -1 ? "#ef4444" : "transparent",
+                  color: userVote === -1 ? "#fff" : "#6b7280",
+                  border: `1px solid ${userVote === -1 ? "#ef4444" : "#374151"}`,
+                  borderRadius: 6,
+                  padding: "4px 10px",
                   cursor: "pointer",
-                  fontSize: 16,
-                  transition: "background 0.2s, color 0.2s",
+                  fontSize: 14,
+                  transition: "background 0.2s, color 0.2s, border-color 0.2s",
                 }}
               >
-                &#9660;
+                ▼
               </button>
             </div>
           )}

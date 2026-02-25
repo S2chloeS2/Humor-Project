@@ -16,16 +16,17 @@ export default function SignOutButton() {
     <button
       onClick={handleSignOut}
       style={{
-        padding: "12px 24px",
+        padding: "6px 14px",
         borderRadius: 8,
-        border: "1px solid #333",
-        background: "#111",
-        color: "#fff",
-        fontSize: 16,
+        border: "1px solid #7f1d1d",
+        background: "transparent",
+        color: "#ef4444",
+        fontSize: 13,
         cursor: "pointer",
+        transition: "border-color 0.15s, color 0.15s",
       }}
     >
-      Sign Out
+      Sign out
     </button>
   );
 }

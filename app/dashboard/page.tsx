@@ -18,24 +18,59 @@ export default async function DashboardPage() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        height: "100vh",
+        minHeight: "calc(100vh - 60px)",
+        padding: "0 24px",
       }}
     >
-      <div style={{ textAlign: "center" }}>
-        <h1 style={{ fontSize: 32, marginBottom: 16 }}>Dashboard</h1>
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 400,
+          background: "#111",
+          border: "1px solid #1f2937",
+          borderRadius: 16,
+          padding: "40px 36px",
+        }}
+      >
+        {/* Avatar */}
         {user.user_metadata?.avatar_url && (
           <img
             src={user.user_metadata.avatar_url}
             alt="Avatar"
             style={{
-              width: 80,
-              height: 80,
+              width: 64,
+              height: 64,
               borderRadius: "50%",
-              margin: "0 auto 16px",
+              border: "2px solid #1f2937",
+              marginBottom: 20,
+              display: "block",
             }}
           />
         )}
-        <p style={{ fontSize: 18, marginBottom: 24 }}>{user.email}</p>
+
+        {/* Full name */}
+        {user.user_metadata?.full_name && (
+          <p
+            style={{
+              fontSize: 18,
+              fontWeight: 600,
+              marginBottom: 4,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            {user.user_metadata.full_name}
+          </p>
+        )}
+
+        {/* Email */}
+        <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 32 }}>
+          {user.email}
+        </p>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: "#1f2937", marginBottom: 24 }} />
+
+        {/* Sign out */}
         <SignOutButton />
       </div>
     </main>
