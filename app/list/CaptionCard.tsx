@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useRef } from "react";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 
 export default function CaptionCard({
   captionId,
@@ -19,124 +20,208 @@ export default function CaptionCard({
   userVote: number | null;
   onVote: (captionId: string, vote: number) => void;
 }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [6, -6]), { stiffness: 200, damping: 25 });
+  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-6, 6]), { stiffness: 200, damping: 25 });
+  const glowX = useTransform(mouseX, [-0.5, 0.5], ["0%", "100%"]);
+  const glowY = useTransform(mouseY, [-0.5, 0.5], ["0%", "100%"]);
+
+  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    const rect = cardRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    mouseX.set((e.clientX - rect.left) / rect.width - 0.5);
+    mouseY.set((e.clientY - rect.top) / rect.height - 0.5);
+  }
+
+  function handleMouseLeave() {
+    mouseX.set(0);
+    mouseY.set(0);
+  }
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40 }}
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      initial={{ opacity: 0, y: 48 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{
-        scale: 1.02,
-        boxShadow: "0 16px 40px rgba(34,197,94,0.12)",
-      }}
-      transition={{ type: "spring", stiffness: 260, damping: 20 }}
+      transition={{ type: "spring", stiffness: 200, damping: 24 }}
       style={{
-        background: "#111",
-        border: "1px solid #1f2937",
-        borderRadius: 16,
+        rotateX,
+        rotateY,
+        transformStyle: "preserve-3d",
+        perspective: 800,
+        borderRadius: 2,
         overflow: "hidden",
         position: "relative",
-        cursor: "pointer",
+        cursor: "default",
+        background: "#111",
+        border: "1px solid #1c1c1c",
       }}
     >
-      {/* Image */}
+      {/* ── Specular highlight overlay (follows mouse) ─────────────── */}
+      <motion.div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 2,
+          pointerEvents: "none",
+          borderRadius: 2,
+          background: `radial-gradient(circle at ${glowX} ${glowY}, rgba(245,197,24,0.06) 0%, transparent 60%)`,
+        }}
+      />
+
+      {/* ── Image ─────────────────────────────────────────────────── */}
       {typeof imageUrl === "string" && imageUrl.startsWith("http") ? (
-        <img
-          src={imageUrl}
-          alt=""
-          loading="lazy"
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.display = "none";
-          }}
-          style={{
-            width: "100%",
-            height: 220,
-            objectFit: "cover",
-          }}
-        />
+        <div style={{ position: "relative", overflow: "hidden" }}>
+          <img
+            src={imageUrl}
+            alt=""
+            loading="lazy"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+            style={{ width: "100%", height: 240, objectFit: "cover", display: "block", filter: "grayscale(20%) contrast(1.05)" }}
+          />
+          {/* Film strip overlay on image */}
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "linear-gradient(to bottom, transparent 55%, rgba(12,12,12,0.95) 100%)",
+              pointerEvents: "none",
+            }}
+          />
+        </div>
       ) : (
         <div
           style={{
-            height: 220,
+            height: 240,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "#0d1f14",
-            color: "#4b5563",
-            fontSize: 13,
+            background: "#0e0e0e",
+            color: "#2a2a2a",
+            fontSize: 11,
+            letterSpacing: "0.2em",
+            textTransform: "uppercase",
+            fontFamily: "monospace",
           }}
         >
-          No image
+          No Image
         </div>
       )}
 
-      {/* Content */}
-      <div style={{ padding: 20 }}>
+      {/* ── Content ───────────────────────────────────────────────── */}
+      <div style={{ padding: "16px 18px 18px", position: "relative", zIndex: 1 }}>
+        {/* Caption text */}
         <p
           style={{
-            color: "#e5e7eb",
-            marginBottom: 12,
-            fontSize: 14,
-            lineHeight: 1.6,
-            margin: "0 0 12px 0",
+            color: "#c8c4bc",
+            fontSize: 13,
+            lineHeight: 1.65,
+            margin: "0 0 16px 0",
+            fontStyle: "italic",
+            letterSpacing: "0.01em",
           }}
         >
-          {content}
+          "{content}"
         </p>
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
+        {/* Footer row */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           {/* Like count */}
-          <span style={{ color: "#9ef5c3", fontSize: 13, fontWeight: 500 }}>
-            ♥ {likes}
+          <span
+            style={{
+              fontFamily: "monospace",
+              fontSize: 10,
+              letterSpacing: "0.12em",
+              color: "#3a3a3a",
+              textTransform: "uppercase",
+            }}
+          >
+            ★ {likes}
           </span>
 
-          {/* Vote buttons — only for logged-in users */}
-          {isLoggedIn && (
-            <div style={{ display: "flex", gap: 6 }}>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onVote(captionId, 1);
-                }}
+          {/* Vote buttons */}
+          {isLoggedIn ? (
+            <div style={{ display: "flex", gap: 4 }}>
+              <motion.button
+                whileTap={{ scale: 0.88 }}
+                onClick={(e) => { e.stopPropagation(); onVote(captionId, 1); }}
                 style={{
-                  background: userVote === 1 ? "#22c55e" : "transparent",
-                  color: userVote === 1 ? "#000" : "#6b7280",
-                  border: `1px solid ${userVote === 1 ? "#22c55e" : "#374151"}`,
-                  borderRadius: 6,
+                  background: userVote === 1 ? "#f5c518" : "transparent",
+                  color: userVote === 1 ? "#0c0c0c" : "#3a3a3a",
+                  border: `1px solid ${userVote === 1 ? "#f5c518" : "#2a2a2a"}`,
+                  borderRadius: 2,
                   padding: "4px 10px",
                   cursor: "pointer",
-                  fontSize: 14,
-                  transition: "background 0.2s, color 0.2s, border-color 0.2s",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: "0.06em",
+                  transition: "all 0.18s",
                 }}
               >
                 ▲
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onVote(captionId, -1);
-                }}
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.88 }}
+                onClick={(e) => { e.stopPropagation(); onVote(captionId, -1); }}
                 style={{
-                  background: userVote === -1 ? "#ef4444" : "transparent",
-                  color: userVote === -1 ? "#fff" : "#6b7280",
-                  border: `1px solid ${userVote === -1 ? "#ef4444" : "#374151"}`,
-                  borderRadius: 6,
+                  background: userVote === -1 ? "#c0392b" : "transparent",
+                  color: userVote === -1 ? "#fff" : "#3a3a3a",
+                  border: `1px solid ${userVote === -1 ? "#c0392b" : "#2a2a2a"}`,
+                  borderRadius: 2,
                   padding: "4px 10px",
                   cursor: "pointer",
-                  fontSize: 14,
-                  transition: "background 0.2s, color 0.2s, border-color 0.2s",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: "0.06em",
+                  transition: "all 0.18s",
                 }}
               >
                 ▼
-              </button>
+              </motion.button>
             </div>
+          ) : (
+            <a
+              href="/login"
+              style={{
+                fontFamily: "monospace",
+                fontSize: 9,
+                letterSpacing: "0.14em",
+                color: "#3a3a3a",
+                textDecoration: "none",
+                textTransform: "uppercase",
+                transition: "color 0.15s",
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#f5c518"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#3a3a3a"; }}
+            >
+              Sign in to vote
+            </a>
           )}
         </div>
       </div>
+
+      {/* ── Gold border on hover via motion ───────────────────────── */}
+      <motion.div
+        aria-hidden
+        initial={{ opacity: 0 }}
+        whileHover={{ opacity: 1 }}
+        transition={{ duration: 0.2 }}
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: 2,
+          border: "1px solid rgba(245,197,24,0.3)",
+          pointerEvents: "none",
+          zIndex: 3,
+        }}
+      />
     </motion.div>
   );
 }

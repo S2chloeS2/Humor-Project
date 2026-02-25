@@ -21,7 +21,6 @@ export default function CaptionGrid() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
-        // Load existing votes for the user
         const { data: votes } = await supabase
           .from("caption_votes")
           .select("caption_id, vote_value")
@@ -69,9 +68,9 @@ export default function CaptionGrid() {
   async function handleVote(captionId: string, vote: number) {
     if (!userId) return;
 
-    const previousVote = userVotes[captionId]; // snapshot for rollback
+    const previousVote = userVotes[captionId];
 
-    // 1. Optimistic UI update first
+    // 1. Optimistic UI update
     if (previousVote === vote) {
       setUserVotes((prev) => {
         const updated = { ...prev };
@@ -86,21 +85,18 @@ export default function CaptionGrid() {
     let error: any = null;
 
     if (previousVote === vote) {
-      // Remove vote if clicking the same button
       ({ error } = await supabase
         .from("caption_votes")
         .delete()
         .eq("profile_id", userId)
         .eq("caption_id", captionId));
     } else if (previousVote !== undefined) {
-      // Update existing vote
       ({ error } = await supabase
         .from("caption_votes")
         .update({ vote_value: vote, modified_datetime_utc: new Date().toISOString() })
         .eq("profile_id", userId)
         .eq("caption_id", captionId));
     } else {
-      // Insert new vote
       const now = new Date().toISOString();
       ({ error } = await supabase
         .from("caption_votes")
@@ -113,7 +109,7 @@ export default function CaptionGrid() {
         }));
     }
 
-    // 3. Rollback UI on failure
+    // 3. Rollback on failure
     if (error) {
       setUserVotes((prev) => {
         const updated = { ...prev };
@@ -129,42 +125,64 @@ export default function CaptionGrid() {
   }
 
   return (
-    <main
-      style={{
-        padding: "48px 40px",
-        maxWidth: 1280,
-        margin: "0 auto",
-      }}
-    >
-      {/* Page header */}
+    <main style={{ padding: "48px 40px", maxWidth: 1280, margin: "0 auto" }}>
+
+      {/* ── Page header ──────────────────────────────────────────────────── */}
       <motion.div
-        initial={{ opacity: 0, y: -12 }}
+        initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        style={{ marginBottom: 40 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        style={{ marginBottom: 48 }}
       >
+        {/* Issue label */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+          <div style={{ width: 24, height: 1, background: "#f5c518" }} />
+          <span
+            style={{
+              fontFamily: "monospace",
+              fontSize: 9,
+              letterSpacing: "0.28em",
+              color: "#f5c518",
+              textTransform: "uppercase",
+            }}
+          >
+            Community Archive
+          </span>
+          <div style={{ width: 24, height: 1, background: "#f5c518" }} />
+        </div>
+
         <h1
           style={{
-            fontSize: 40,
-            fontWeight: 600,
-            marginBottom: 8,
-            lineHeight: 1.1,
-            letterSpacing: "-0.02em",
+            fontSize: "clamp(32px, 5vw, 56px)",
+            fontWeight: 800,
+            lineHeight: 0.95,
+            letterSpacing: "-0.04em",
+            color: "#f0ece4",
+            margin: "0 0 14px 0",
           }}
         >
-          Captions
+          The Captions
         </h1>
-        <p style={{ fontSize: 15, color: "#6b7280", lineHeight: 1.6, margin: 0 }}>
-          Community-generated captions, ranked by votes.
+        <p
+          style={{
+            fontFamily: "monospace",
+            fontSize: 11,
+            color: "#3a3a3a",
+            margin: 0,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+          }}
+        >
+          Community-voted · AI-generated
         </p>
       </motion.div>
 
-      {/* Caption grid */}
+      {/* ── Caption grid ─────────────────────────────────────────────────── */}
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-          gap: 20,
+          gap: 16,
         }}
       >
         {captions.map((c, idx) => (
@@ -181,24 +199,30 @@ export default function CaptionGrid() {
         ))}
       </div>
 
-      {/* Load more button */}
-      <div style={{ textAlign: "center", marginTop: 48 }}>
-        <button
+      {/* ── Load more ────────────────────────────────────────────────────── */}
+      <div style={{ textAlign: "center", marginTop: 64 }}>
+        <motion.button
+          whileHover={{ borderColor: "#f5c518", color: "#f5c518" }}
+          whileTap={{ scale: 0.96 }}
           onClick={loadMore}
           disabled={loading}
+          transition={{ duration: 0.15 }}
           style={{
-            padding: "12px 32px",
-            borderRadius: 10,
-            border: "1px solid #374151",
+            padding: "12px 40px",
+            borderRadius: 2,
+            border: "1px solid #2a2a2a",
             background: "transparent",
-            color: loading ? "#4b5563" : "#9ca3af",
-            fontSize: 14,
+            color: loading ? "#2a2a2a" : "#3a3a3a",
+            fontSize: 10,
+            fontFamily: "monospace",
+            letterSpacing: "0.2em",
+            textTransform: "uppercase",
             cursor: loading ? "not-allowed" : "pointer",
             transition: "border-color 0.15s, color 0.15s",
           }}
         >
-          {loading ? "Loading…" : "Load more"}
-        </button>
+          {loading ? "Loading…" : "Load More"}
+        </motion.button>
       </div>
     </main>
   );

@@ -1,12 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --accent: #22c55e;
-  --accent-light: #9ef5c3;
-  --border-subtle: #1f2937;
-  --border-default: #374151;
+  --background: #0c0c0c;
+  --foreground: #f0ece4;
+  --gold: #f5c518;
+  --gold-dim: #c9a227;
+  --gold-glow: rgba(245, 197, 24, 0.12);
+  --border-subtle: #1c1c1c;
+  --border-default: #2a2a2a;
 }
 
 @theme inline {
@@ -22,17 +23,8 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #0a0a0a;
-}
-::-webkit-scrollbar-thumb {
-  background: #1f2937;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #374151;
-}
+/* Custom scrollbar — gold on hover */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #0c0c0c; }
+::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #f5c518; }

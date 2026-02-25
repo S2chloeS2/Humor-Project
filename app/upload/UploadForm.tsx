@@ -37,12 +37,12 @@ const STEP_LABELS: Record<Step, string> = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function UploadForm() {
-  const [file, setFile]                       = useState<File | null>(null);
-  const [preview, setPreview]                 = useState<string | null>(null);
-  const [loading, setLoading]                 = useState(false);
-  const [error, setError]                     = useState<string | null>(null);
-  const [step, setStep]                       = useState<Step | null>(null);
-  const [captions, setCaptions]               = useState<GeneratedCaption[] | null>(null);
+  const [file, setFile]                         = useState<File | null>(null);
+  const [preview, setPreview]                   = useState<string | null>(null);
+  const [loading, setLoading]                   = useState(false);
+  const [error, setError]                       = useState<string | null>(null);
+  const [step, setStep]                         = useState<Step | null>(null);
+  const [captions, setCaptions]                 = useState<GeneratedCaption[] | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -186,7 +186,7 @@ export default function UploadForm() {
   // ─── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
       {/* ── Drop zone ────────────────────────────────────────────────────── */}
       <motion.div
@@ -194,14 +194,14 @@ export default function UploadForm() {
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         animate={{
-          borderColor: file ? "#22c55e" : "#374151",
-          background: file ? "#0d1f14" : "#111",
+          borderColor: file ? "#f5c518" : "#2a2a2a",
+          background: file ? "rgba(245,197,24,0.03)" : "#111",
         }}
-        whileHover={{ borderColor: file ? "#22c55e" : "#4b5563" }}
+        whileHover={{ borderColor: file ? "#f5c518" : "#3a3a3a" }}
         transition={{ duration: 0.2 }}
         style={{
-          border: "2px dashed",
-          borderRadius: 16,
+          border: "1px dashed",
+          borderRadius: 2,
           padding: 32,
           textAlign: "center",
           cursor: loading ? "not-allowed" : "pointer",
@@ -236,9 +236,22 @@ export default function UploadForm() {
               <img
                 src={preview}
                 alt="Preview"
-                style={{ maxHeight: 200, maxWidth: "100%", borderRadius: 10, objectFit: "contain" }}
+                style={{
+                  maxHeight: 200,
+                  maxWidth: "100%",
+                  objectFit: "contain",
+                  filter: "grayscale(10%) contrast(1.05)",
+                }}
               />
-              <p style={{ color: "#9ef5c3", fontSize: 13 }}>
+              <p
+                style={{
+                  fontFamily: "monospace",
+                  color: "#f5c518",
+                  fontSize: 11,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                }}
+              >
                 {file?.name}&nbsp;·&nbsp;{file ? (file.size / 1024).toFixed(1) + " KB" : ""}
               </p>
             </motion.div>
@@ -251,19 +264,30 @@ export default function UploadForm() {
               style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}
             >
               <svg
-                width={40} height={40} viewBox="0 0 24 24"
-                fill="none" stroke="#4b5563" strokeWidth={1.5}
+                width={36} height={36} viewBox="0 0 24 24"
+                fill="none" stroke="#2a2a2a" strokeWidth={1.5}
                 strokeLinecap="round" strokeLinejoin="round"
               >
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="17 8 12 3 7 8" />
                 <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
-              <p style={{ color: "#6b7280", fontSize: 15 }}>
+              <p style={{ color: "#3a3a3a", fontSize: 13, margin: 0 }}>
                 Drag &amp; drop or{" "}
-                <span style={{ color: "#9ef5c3", textDecoration: "underline" }}>browse</span>
+                <span style={{ color: "#f5c518", textDecoration: "underline" }}>browse</span>
               </p>
-              <p style={{ color: "#4b5563", fontSize: 12 }}>JPEG · PNG · WebP · GIF · HEIC</p>
+              <p
+                style={{
+                  fontFamily: "monospace",
+                  color: "#2a2a2a",
+                  fontSize: 10,
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  margin: 0,
+                }}
+              >
+                JPEG · PNG · WebP · GIF · HEIC
+              </p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -277,24 +301,26 @@ export default function UploadForm() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             style={{
-              background: "#2d0a0a",
-              border: "1px solid #7f1d1d",
-              borderRadius: 10,
+              background: "#1a0a0a",
+              border: "1px solid #5a1a1a",
+              borderRadius: 2,
               padding: "12px 16px",
               color: "#fca5a5",
-              fontSize: 14,
+              fontSize: 12,
+              fontFamily: "monospace",
+              letterSpacing: "0.04em",
               display: "flex",
               alignItems: "center",
               gap: 8,
             }}
           >
-            <span style={{ fontSize: 16 }}>⚠</span>
+            <span style={{ fontSize: 14 }}>⚠</span>
             {error}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── Loading skeleton ──────────────────────────────────────────────── */}
+      {/* ── Loading state ──────────────────────────────────────────────────── */}
       <AnimatePresence>
         {loading && (
           <motion.div
@@ -303,19 +329,28 @@ export default function UploadForm() {
             exit={{ opacity: 0 }}
             style={{ display: "flex", flexDirection: "column", gap: 10 }}
           >
-            <p style={{ color: "#6b7280", fontSize: 13, textAlign: "center" }}>
+            <p
+              style={{
+                fontFamily: "monospace",
+                color: "#f5c518",
+                fontSize: 10,
+                textAlign: "center",
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+              }}
+            >
               {step ? STEP_LABELS[step] : "Working…"}
             </p>
-            {[100, 80, 60].map((w, i) => (
+            {[100, 75, 55].map((w, i) => (
               <motion.div
                 key={i}
-                animate={{ opacity: [0.3, 0.7, 0.3] }}
-                transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.15 }}
+                animate={{ opacity: [0.15, 0.5, 0.15] }}
+                transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.18 }}
                 style={{
-                  height: 14,
+                  height: 2,
                   width: `${w}%`,
-                  background: "#1f2937",
-                  borderRadius: 6,
+                  background: "linear-gradient(90deg, #f5c518, transparent)",
+                  borderRadius: 1,
                   alignSelf: "flex-start",
                 }}
               />
@@ -325,20 +360,24 @@ export default function UploadForm() {
       </AnimatePresence>
 
       {/* ── Action buttons ────────────────────────────────────────────────── */}
-      <div style={{ display: "flex", gap: 10 }}>
+      <div style={{ display: "flex", gap: 8 }}>
         {file && !loading && (
           <motion.button
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
+            whileHover={{ borderColor: "#3a3a3a", color: "#9ca3af" }}
             onClick={handleRemove}
             style={{
               flex: "0 0 auto",
               padding: "12px 20px",
-              borderRadius: 10,
-              border: "1px solid #374151",
+              borderRadius: 2,
+              border: "1px solid #2a2a2a",
               background: "transparent",
-              color: "#9ca3af",
-              fontSize: 14,
+              color: "#3a3a3a",
+              fontSize: 11,
+              fontFamily: "monospace",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
               cursor: "pointer",
             }}
           >
@@ -346,18 +385,24 @@ export default function UploadForm() {
           </motion.button>
         )}
 
-        <button
+        <motion.button
           onClick={handleUpload}
           disabled={!file || loading}
+          whileHover={file && !loading ? { background: "#e0b414" } : {}}
+          whileTap={file && !loading ? { scale: 0.97 } : {}}
+          transition={{ duration: 0.15 }}
           style={{
             flex: 1,
             padding: "12px 24px",
-            borderRadius: 10,
+            borderRadius: 2,
             border: "none",
-            background: !file || loading ? "#1f2937" : "#22c55e",
-            color: !file || loading ? "#4b5563" : "#000",
-            fontSize: 15,
-            fontWeight: 600,
+            background: !file || loading ? "#1a1a1a" : "#f5c518",
+            color: !file || loading ? "#2a2a2a" : "#0c0c0c",
+            fontSize: 11,
+            fontWeight: 700,
+            fontFamily: "monospace",
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
             cursor: !file || loading ? "not-allowed" : "pointer",
             transition: "background 0.2s, color 0.2s",
             display: "flex",
@@ -371,7 +416,7 @@ export default function UploadForm() {
               <motion.span
                 animate={{ rotate: 360 }}
                 transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-                style={{ display: "inline-block", fontSize: 16 }}
+                style={{ display: "inline-block", fontSize: 14 }}
               >
                 ⟳
               </motion.span>
@@ -380,10 +425,10 @@ export default function UploadForm() {
           ) : (
             "Generate Captions"
           )}
-        </button>
+        </motion.button>
       </div>
 
-      {/* ── Generated Captions (success UI) ──────────────────────────────── */}
+      {/* ── Generated Captions ────────────────────────────────────────────── */}
       <AnimatePresence>
         {captions !== null && (
           <motion.div
@@ -395,44 +440,85 @@ export default function UploadForm() {
             style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 8 }}
           >
             {/* Section header */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <h2 style={{ color: "#9ef5c3", fontSize: 18, fontWeight: 600, margin: 0 }}>
-                Generated Captions
-              </h2>
-              <button
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingBottom: 16,
+                borderBottom: "1px solid #1c1c1c",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 20, height: 1, background: "#f5c518" }} />
+                <span
+                  style={{
+                    fontFamily: "monospace",
+                    fontSize: 9,
+                    letterSpacing: "0.24em",
+                    color: "#f5c518",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Generated Captions
+                </span>
+              </div>
+              <motion.button
                 onClick={handleReset}
+                whileHover={{ borderColor: "#3a3a3a", color: "#9ca3af" }}
                 style={{
                   background: "transparent",
-                  border: "1px solid #374151",
-                  borderRadius: 8,
-                  color: "#9ca3af",
-                  fontSize: 13,
+                  border: "1px solid #2a2a2a",
+                  borderRadius: 2,
+                  color: "#3a3a3a",
+                  fontFamily: "monospace",
+                  fontSize: 9,
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
                   padding: "6px 14px",
                   cursor: "pointer",
                 }}
               >
                 Upload another
-              </button>
+              </motion.button>
             </div>
 
             {/* Uploaded image thumbnail */}
             {uploadedImageUrl && (
-              <img
-                src={uploadedImageUrl}
-                alt="Uploaded"
-                style={{
-                  width: "100%",
-                  maxHeight: 200,
-                  objectFit: "cover",
-                  borderRadius: 12,
-                  border: "1px solid #22c55e33",
-                }}
-              />
+              <div style={{ position: "relative", overflow: "hidden" }}>
+                <img
+                  src={uploadedImageUrl}
+                  alt="Uploaded"
+                  style={{
+                    width: "100%",
+                    maxHeight: 200,
+                    objectFit: "cover",
+                    display: "block",
+                    filter: "grayscale(20%) contrast(1.05)",
+                  }}
+                />
+                <div
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: "linear-gradient(to bottom, transparent 50%, rgba(12,12,12,0.9) 100%)",
+                    pointerEvents: "none",
+                  }}
+                />
+              </div>
             )}
 
             {/* Caption cards */}
             {captions.length === 0 ? (
-              <p style={{ color: "#6b7280", fontSize: 14 }}>
+              <p
+                style={{
+                  fontFamily: "monospace",
+                  color: "#3a3a3a",
+                  fontSize: 11,
+                  letterSpacing: "0.1em",
+                }}
+              >
                 No captions were generated. Try a different image.
               </p>
             ) : (
@@ -441,16 +527,41 @@ export default function UploadForm() {
                   key={caption.id ?? i}
                   initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.07 }}
+                  transition={{ delay: i * 0.07, ease: "easeOut" }}
                   style={{
-                    background: "#0d1f14",
-                    border: "1px solid #22c55e33",
-                    borderRadius: 12,
-                    padding: "14px 18px",
+                    background: "#0e0e0e",
+                    border: "1px solid #1c1c1c",
+                    borderRadius: 2,
+                    padding: "16px 18px",
+                    position: "relative",
                   }}
                 >
-                  <p style={{ color: "#fff", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
-                    {caption.content}
+                  {/* Caption number */}
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: 12,
+                      right: 14,
+                      fontFamily: "monospace",
+                      fontSize: 9,
+                      letterSpacing: "0.1em",
+                      color: "#2a2a2a",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <p
+                    style={{
+                      color: "#c8c4bc",
+                      fontSize: 13,
+                      lineHeight: 1.65,
+                      margin: 0,
+                      fontStyle: "italic",
+                      paddingRight: 28,
+                    }}
+                  >
+                    "{caption.content}"
                   </p>
                 </motion.div>
               ))
