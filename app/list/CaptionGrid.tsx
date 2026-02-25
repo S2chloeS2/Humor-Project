@@ -70,6 +70,19 @@ export default function CaptionGrid() {
 
     const previousVote = userVotes[captionId];
 
+    // ── Calculate like_count delta ──────────────────────────────────────
+    let likeDelta = 0;
+    if (previousVote === vote) {
+      // Toggle off: same button re-clicked
+      likeDelta = -vote; // upvote(1) cancel → -1 / downvote(-1) cancel → +1
+    } else if (previousVote !== undefined) {
+      // Change vote: remove old + add new
+      likeDelta = vote - previousVote; // e.g. -1→+1 = +2, +1→-1 = -2
+    } else {
+      // New vote
+      likeDelta = vote; // +1 or -1
+    }
+
     // 1. Optimistic UI update
     if (previousVote === vote) {
       setUserVotes((prev) => {
@@ -80,6 +93,15 @@ export default function CaptionGrid() {
     } else {
       setUserVotes((prev) => ({ ...prev, [captionId]: vote }));
     }
+
+    // Optimistic like_count update
+    setCaptions((prev) =>
+      prev.map((c) =>
+        c.id === captionId
+          ? { ...c, like_count: (c.like_count ?? 0) + likeDelta }
+          : c
+      )
+    );
 
     // 2. DB request
     let error: any = null;
@@ -120,6 +142,14 @@ export default function CaptionGrid() {
         }
         return updated;
       });
+      // Rollback like_count
+      setCaptions((prev) =>
+        prev.map((c) =>
+          c.id === captionId
+            ? { ...c, like_count: (c.like_count ?? 0) - likeDelta }
+            : c
+        )
+      );
       console.error("Vote failed:", error.message);
     }
   }
