@@ -53,11 +53,12 @@ export default function CaptionGrid() {
           url
         )
       `)
-      .eq("is_public", true)
       .order("created_datetime_utc", { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
 
-    if (!error && data) {
+    if (error) {
+      console.error("Caption load error:", error);
+    } else if (data) {
       setCaptions((prev) => [...prev, ...data]);
       setPage((p) => p + 1);
     }
