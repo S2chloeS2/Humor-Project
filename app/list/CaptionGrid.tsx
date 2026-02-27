@@ -49,10 +49,13 @@ export default function CaptionGrid() {
         id,
         content,
         like_count,
-        images (
+        images!inner (
           url
         )
       `)
+      .eq("is_public", true)
+      .not("content", "is", null)
+      .neq("content", "")
       .order("created_datetime_utc", { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
 
