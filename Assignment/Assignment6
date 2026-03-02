@@ -1,0 +1,29 @@
+Week 6: Admin Panel
+Assignment
+Due date
+3/6/2026, 3:30:00 PM EST
+Create new GitHub repository and a new project in Vercel.
+
+
+For this project, you’ll create an admin area for the database.
+
+
+Design an interface showing off interesting statistics from the data. Be creative in the data you choose to highlight and the way in which you highlight it.
+
+
+Also create a way to manage users/profiles, images, and captions.
+
+
+Important: Make sure every route in your admin area is behind a login wall. Only allow users with profiles.is_superadmin==TRUE. If you don’t do this step, you’ll expose our staging environment to the entire internet.
+
+
+Question: But wait, if profiles.is_superadmin==TRUE is required to use your own admin area, won’t you be locked out? Given the tools and access you currently have at your disposal, how could you solve this problem?
+
+
+Note: Please do not update/enable/disable any RLS policies in Supabase.
+
+
+Turn off Vercel “deployment protection” so that you can view your page in Incognito Mode.
+
+
+Submit the latest commit-specific URL of your two Vercel apps in the “Submissions” section.
