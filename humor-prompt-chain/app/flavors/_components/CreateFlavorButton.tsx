@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
 export default function CreateFlavorButton() {
@@ -24,88 +23,126 @@ export default function CreateFlavorButton() {
       body: JSON.stringify({ slug: slug.trim(), description: description.trim() }),
     });
 
+    const data = await res.json();
+
     if (!res.ok) {
-      const data = await res.json();
       setError(data.error || "Failed to create flavor");
       setLoading(false);
       return;
     }
 
+    // Navigate directly to the new flavor — more reliable than router.refresh()
+    router.push(`/flavors/${data.id}`);
+  }
+
+  function handleClose() {
     setOpen(false);
     setSlug("");
     setDescription("");
-    setLoading(false);
-    router.refresh();
+    setError("");
   }
 
   return (
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
+        className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95"
         style={{ background: "linear-gradient(135deg, #f59e0b, #f97316)", color: "#0f172a" }}
       >
-        <span>+</span> New Flavor
+        + New Flavor
       </button>
 
       {open && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
-          onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
+          style={{ backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
         >
           <div
-            className="w-full max-w-md rounded-xl p-6 animate-fade-up"
+            className="w-full max-w-md rounded-2xl overflow-hidden animate-fade-up"
             style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-accent)" }}
           >
-            <h2 className="text-lg font-bold mb-4" style={{ color: "var(--text-primary)" }}>
-              Create Humor Flavor
-            </h2>
-            <form onSubmit={handleCreate} className="space-y-4">
+            {/* Modal header */}
+            <div
+              className="px-6 py-5"
+              style={{
+                background: "linear-gradient(135deg, rgba(245,158,11,0.1), rgba(249,115,22,0.05))",
+                borderBottom: "1px solid var(--border-accent)",
+              }}
+            >
+              <p className="text-xs font-mono uppercase tracking-widest mb-1" style={{ color: "var(--accent)" }}>
+                New Flavor
+              </p>
+              <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
+                Create a Humor Flavor
+              </h2>
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                A flavor is a named pipeline of LLM steps.
+              </p>
+            </div>
+
+            {/* Modal body */}
+            <form onSubmit={handleCreate} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-mono uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
+                <label className="block text-xs font-mono uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>
                   Slug *
                 </label>
                 <input
                   value={slug}
-                  onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
+                  onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-"))}
                   placeholder="e.g. dry-sarcasm"
                   required
-                  className="w-full px-3 py-2 rounded-lg text-sm font-mono outline-none"
+                  autoFocus
+                  className="w-full px-4 py-3 rounded-xl text-sm font-mono outline-none transition-all"
                   style={{
                     backgroundColor: "var(--bg-base)",
                     border: "1px solid var(--border)",
                     color: "var(--text-primary)",
                   }}
+                  onFocus={(e) => { (e.target as HTMLInputElement).style.border = "1px solid var(--border-accent)"; }}
+                  onBlur={(e) => { (e.target as HTMLInputElement).style.border = "1px solid var(--border)"; }}
                 />
+                {slug && (
+                  <p className="text-xs font-mono mt-1.5" style={{ color: "var(--accent)" }}>
+                    → {slug}
+                  </p>
+                )}
               </div>
+
               <div>
-                <label className="block text-xs font-mono uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
+                <label className="block text-xs font-mono uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>
                   Description
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe what makes this flavor unique..."
+                  placeholder="What makes this humor flavor unique?"
                   rows={3}
-                  className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none"
+                  className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none transition-all"
                   style={{
                     backgroundColor: "var(--bg-base)",
                     border: "1px solid var(--border)",
                     color: "var(--text-primary)",
                   }}
+                  onFocus={(e) => { (e.target as HTMLTextAreaElement).style.border = "1px solid var(--border-accent)"; }}
+                  onBlur={(e) => { (e.target as HTMLTextAreaElement).style.border = "1px solid var(--border)"; }}
                 />
               </div>
 
               {error && (
-                <p className="text-sm" style={{ color: "var(--danger)" }}>{error}</p>
+                <div
+                  className="rounded-xl px-4 py-3 text-sm"
+                  style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "var(--danger)" }}
+                >
+                  {error}
+                </div>
               )}
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-1">
                 <button
                   type="button"
-                  onClick={() => setOpen(false)}
-                  className="flex-1 py-2 rounded-lg text-sm font-mono transition-all hover:opacity-80"
+                  onClick={handleClose}
+                  className="flex-1 py-3 rounded-xl text-sm font-mono transition-all hover:opacity-80"
                   style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "transparent" }}
                 >
                   Cancel
@@ -113,10 +150,10 @@ export default function CreateFlavorButton() {
                 <button
                   type="submit"
                   disabled={loading || !slug.trim()}
-                  className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50"
+                  className="flex-1 py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{ background: "linear-gradient(135deg, #f59e0b, #f97316)", color: "#0f172a" }}
                 >
-                  {loading ? "Creating..." : "Create Flavor"}
+                  {loading ? "Creating…" : "Create & Open →"}
                 </button>
               </div>
             </form>

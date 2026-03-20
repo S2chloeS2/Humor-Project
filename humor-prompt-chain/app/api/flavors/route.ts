@@ -25,7 +25,11 @@ export async function POST(request: Request) {
 
   const { data, error } = await ctx.admin
     .from("humor_flavors")
-    .insert({ slug, description: description || null })
+    .insert({
+      slug,
+      description: description || null,
+      created_datetime_utc: new Date().toISOString(),
+    })
     .select()
     .single();
 
