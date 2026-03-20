@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 interface Step {
   id: string;
@@ -22,6 +23,7 @@ interface Props {
 
 export default function StepModal({ flavorId, step, nextOrder = 1, onClose, onSaved }: Props) {
   const isEdit = !!step;
+  const [mounted, setMounted] = useState(false);
 
   const [description, setDescription] = useState(step?.description ?? "");
   const [systemPrompt, setSystemPrompt] = useState(step?.llm_system_prompt ?? "");
@@ -29,6 +31,8 @@ export default function StepModal({ flavorId, step, nextOrder = 1, onClose, onSa
   const [temperature, setTemperature] = useState(String(step?.llm_temperature ?? "0.7"));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => setMounted(true), []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -65,10 +69,12 @@ export default function StepModal({ flavorId, step, nextOrder = 1, onClose, onSa
     onSaved(saved);
   }
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)" }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style={{ backgroundColor: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
@@ -162,6 +168,7 @@ export default function StepModal({ flavorId, step, nextOrder = 1, onClose, onSa
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

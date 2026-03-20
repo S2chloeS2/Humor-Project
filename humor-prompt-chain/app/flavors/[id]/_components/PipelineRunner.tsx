@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 
 interface Step {
   id: string;
@@ -45,7 +45,7 @@ export default function PipelineRunner({
   const [finalCaptions, setFinalCaptions] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [ran, setRan] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [imgError, setImgError] = useState(false);
 
   const hasSteps = steps.length > 0;
 
@@ -57,8 +57,7 @@ export default function PipelineRunner({
     setError("");
     setFinalCaptions([]);
     setRan(false);
-
-    // Init all steps as idle
+    setImgError(false);
     setStepResults(steps.map((s) => ({ stepId: s.id, status: "idle" })));
 
     const res = await fetch("/api/test-flavor", {
@@ -76,28 +75,21 @@ export default function PipelineRunner({
       return;
     }
 
-    // Animate results arriving step by step
     const rawSteps: any[] = data.steps ?? [];
     for (let i = 0; i < steps.length; i++) {
-      // Mark current step running
       setStepResults((prev) =>
         prev.map((r, ri) => (ri === i ? { ...r, status: "running" } : r))
       );
-      await new Promise((r) => setTimeout(r, 350));
+      await new Promise((r) => setTimeout(r, 400));
 
-      // Mark done with output
       const output = rawSteps[i]?.output ?? "";
       setStepResults((prev) =>
-        prev.map((r, ri) =>
-          ri === i ? { ...r, status: "done", output } : r
-        )
+        prev.map((r, ri) => (ri === i ? { ...r, status: "done", output } : r))
       );
       await new Promise((r) => setTimeout(r, 200));
     }
 
-    // Show final captions
-    const captions: string[] = data.captions ?? [];
-    setFinalCaptions(captions);
+    setFinalCaptions(data.captions ?? []);
     setRan(true);
     setRunning(false);
   }
@@ -108,7 +100,15 @@ export default function PipelineRunner({
     setError("");
     setRan(false);
     setRunning(false);
+    setImgError(false);
   }
+
+  const lastDoneIdx = stepResults.reduceRight(
+    (found, r, i) => (found === -1 && r.status === "done" ? i : found),
+    -1
+  );
+  const displayResult = lastDoneIdx >= 0 ? stepResults[lastDoneIdx] : null;
+  const displayStepInfo = lastDoneIdx >= 0 ? steps[lastDoneIdx] : null;
 
   return (
     <div
@@ -116,61 +116,100 @@ export default function PipelineRunner({
       style={{
         backgroundColor: "var(--bg-card)",
         border: "1px solid var(--border-accent)",
-        boxShadow: "0 0 48px rgba(245,158,11,0.05)",
+        boxShadow: "0 0 60px rgba(245,158,11,0.06), 0 8px 32px rgba(0,0,0,0.12)",
       }}
     >
-      {/* ── Header bar ──────────────────────────────── */}
+      {/* Header */}
       <div
-        className="px-6 py-4 flex items-center justify-between"
+        className="px-8 py-5 flex items-center justify-between"
         style={{
-          background: "linear-gradient(135deg, rgba(245,158,11,0.08), rgba(249,115,22,0.04))",
+          background: "linear-gradient(135deg, rgba(245,158,11,0.1), rgba(249,115,22,0.04))",
           borderBottom: "1px solid var(--border-accent)",
         }}
       >
-        <div>
-          <p className="text-xs font-mono uppercase tracking-widest" style={{ color: "var(--accent)" }}>
-            ▶ Run Pipeline
-          </p>
-          <p className="text-sm font-semibold mt-0.5" style={{ color: "var(--text-primary)" }}>
-            {flavorSlug}
-          </p>
-        </div>
-        {ran && (
-          <button
-            onClick={handleReset}
-            className="text-xs font-mono px-3 py-1.5 rounded-lg transition-all hover:opacity-80"
-            style={{ border: "1px solid var(--border)", color: "var(--text-muted)", background: "transparent" }}
-          >
-            ↺ Reset
-          </button>
-        )}
-      </div>
-
-      <div className="p-6">
-        {/* ── No steps warning ──────────────────────── */}
-        {!hasSteps && (
+        <div className="flex items-center gap-3">
           <div
-            className="rounded-xl p-4 mb-5 flex items-center gap-3"
-            style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)" }}
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold"
+            style={{ background: "linear-gradient(135deg, #f59e0b, #f97316)", color: "#0f172a" }}
           >
-            <span className="text-lg">⚠️</span>
-            <p className="text-sm" style={{ color: "var(--accent)" }}>
-              Add steps to the pipeline below before running.
+            ▶
+          </div>
+          <div>
+            <p className="text-xs font-mono uppercase tracking-widest" style={{ color: "var(--accent)" }}>
+              Run Pipeline
+            </p>
+            <p className="text-sm font-bold font-mono mt-0.5" style={{ color: "var(--text-primary)" }}>
+              {flavorSlug}
             </p>
           </div>
-        )}
+        </div>
 
-        {/* ── Image input ───────────────────────────── */}
-        <form onSubmit={handleRun} className="mb-6">
-          <label className="block text-xs font-mono uppercase tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>
-            Image URL
-          </label>
+        <div className="flex items-center gap-3">
+          {!hasSteps && (
+            <span
+              className="text-xs px-3 py-1.5 rounded-full font-mono"
+              style={{
+                background: "rgba(245,158,11,0.08)",
+                color: "var(--accent)",
+                border: "1px solid rgba(245,158,11,0.2)",
+              }}
+            >
+              ⚠ Add steps below first
+            </span>
+          )}
+          {ran && (
+            <button
+              onClick={handleReset}
+              className="text-xs font-mono px-3 py-1.5 rounded-lg transition-all hover:opacity-80"
+              style={{ border: "1px solid var(--border)", color: "var(--text-muted)", background: "transparent" }}
+            >
+              ↺ Reset
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="p-8">
+        {/* Image Section */}
+        <form onSubmit={handleRun}>
+          <div
+            className="rounded-2xl mb-4 flex items-center justify-center overflow-hidden"
+            style={{
+              minHeight: 220,
+              background: imageUrl && !imgError
+                ? "var(--bg-base)"
+                : `repeating-linear-gradient(-45deg, transparent, transparent 12px, rgba(245,158,11,0.025) 12px, rgba(245,158,11,0.025) 24px)`,
+              border: imageUrl && !imgError
+                ? "2px solid rgba(245,158,11,0.25)"
+                : "2px dashed rgba(245,158,11,0.18)",
+            }}
+          >
+            {imageUrl && !imgError ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={imageUrl}
+                alt="preview"
+                className="max-h-72 max-w-full object-contain"
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <div className="text-center px-8 py-10 select-none">
+                <div className="text-5xl mb-4" style={{ opacity: 0.2 }}>🖼</div>
+                <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>
+                  {imgError ? "Could not load image — check the URL" : "Image preview will appear here"}
+                </p>
+                <p className="text-xs mt-1.5" style={{ color: "var(--text-muted)", opacity: 0.6 }}>
+                  Paste a public image URL in the field below
+                </p>
+              </div>
+            )}
+          </div>
+
           <div className="flex gap-3">
             <input
-              ref={inputRef}
               type="url"
               value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
+              onChange={(e) => { setImageUrl(e.target.value); setImgError(false); }}
               placeholder="https://example.com/image.jpg"
               required
               disabled={running}
@@ -186,11 +225,11 @@ export default function PipelineRunner({
             <button
               type="submit"
               disabled={!imageUrl.trim() || running || !hasSteps}
-              className="flex items-center gap-2.5 px-6 py-3 rounded-xl font-bold text-sm transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-2.5 px-8 py-3 rounded-xl font-bold text-sm transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
                 background: "linear-gradient(135deg, #f59e0b, #f97316)",
                 color: "#0f172a",
-                minWidth: 148,
+                minWidth: 168,
                 justifyContent: "center",
               }}
             >
@@ -207,73 +246,50 @@ export default function PipelineRunner({
               )}
             </button>
           </div>
-
-          {/* Image preview */}
-          {imageUrl && (
-            <div className="mt-3 flex items-start gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={imageUrl}
-                alt="preview"
-                className="w-20 h-20 object-cover rounded-xl"
-                style={{ border: "1px solid var(--border)" }}
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-              />
-              <p className="text-xs font-mono mt-1" style={{ color: "var(--text-muted)" }}>
-                Preview · will be processed through {steps.length} step{steps.length !== 1 ? "s" : ""}
-              </p>
-            </div>
-          )}
         </form>
 
-        {/* ── Error ─────────────────────────────────── */}
+        {/* Error */}
         {error && (
           <div
-            className="rounded-xl p-4 mb-4 text-sm"
+            className="rounded-xl px-5 py-4 mt-6 text-sm"
             style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "var(--danger)" }}
           >
             {error}
           </div>
         )}
 
-        {/* ── Step-by-step results ──────────────────── */}
+        {/* Pipeline Progress */}
         {stepResults.length > 0 && (
-          <div className="space-y-3 mb-5">
-            {steps.map((step, i) => {
-              const result = stepResults[i];
-              const status = result?.status ?? "idle";
+          <div className="mt-8">
+            <p className="text-xs font-mono uppercase tracking-widest mb-5" style={{ color: "var(--text-muted)" }}>
+              Pipeline Progress
+            </p>
 
-              return (
-                <div key={step.id}>
-                  <div
-                    className="rounded-xl overflow-hidden transition-all duration-300"
-                    style={{
-                      border: status === "running"
-                        ? "1px solid rgba(245,158,11,0.5)"
-                        : status === "done"
-                        ? "1px solid rgba(52,211,153,0.3)"
-                        : "1px solid var(--border)",
-                      backgroundColor: "var(--bg-base)",
-                    }}
-                  >
-                    {/* Step header */}
+            <div className="flex items-start gap-2 flex-wrap">
+              {steps.map((step, i) => {
+                const result = stepResults[i];
+                const status = result?.status ?? "idle";
+
+                return (
+                  <div key={step.id} className="flex items-center gap-2">
                     <div
-                      className="flex items-center gap-3 px-4 py-3"
+                      className="flex flex-col items-center gap-2 px-4 py-4 rounded-2xl transition-all duration-300"
                       style={{
-                        background: status === "running"
-                          ? "linear-gradient(135deg, rgba(245,158,11,0.08), transparent)"
-                          : status === "done"
-                          ? "linear-gradient(135deg, rgba(52,211,153,0.06), transparent)"
-                          : "transparent",
+                        minWidth: 100,
+                        backgroundColor:
+                          status === "done" ? "rgba(52,211,153,0.07)"
+                          : status === "running" ? "rgba(245,158,11,0.09)"
+                          : "var(--bg-base)",
+                        border:
+                          status === "done" ? "1px solid rgba(52,211,153,0.3)"
+                          : status === "running" ? "1px solid rgba(245,158,11,0.5)"
+                          : "1px solid var(--border)",
+                        boxShadow: status === "running" ? "0 0 24px rgba(245,158,11,0.15)" : "none",
                       }}
                     >
-                      {/* Status indicator */}
-                      <div className="shrink-0 w-6 h-6 flex items-center justify-center">
+                      <div className="w-6 h-6 flex items-center justify-center">
                         {status === "idle" && (
-                          <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-mono font-bold"
-                            style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}>
-                            {i + 1}
-                          </div>
+                          <div className="w-2.5 h-2.5 rounded-full" style={{ background: "var(--border)", opacity: 0.6 }} />
                         )}
                         {status === "running" && (
                           <span
@@ -282,92 +298,105 @@ export default function PipelineRunner({
                           />
                         )}
                         {status === "done" && (
-                          <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
-                            style={{ background: "rgba(52,211,153,0.15)", color: "#34d399", border: "1px solid rgba(52,211,153,0.3)" }}>
+                          <div
+                            className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+                            style={{ background: "rgba(52,211,153,0.15)", color: "#34d399", border: "1px solid rgba(52,211,153,0.35)" }}
+                          >
                             ✓
                           </div>
                         )}
                         {status === "error" && (
-                          <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
-                            style={{ background: "rgba(239,68,68,0.12)", color: "var(--danger)" }}>
+                          <div
+                            className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
+                            style={{ background: "rgba(239,68,68,0.12)", color: "var(--danger)" }}
+                          >
                             ✗
                           </div>
                         )}
                       </div>
 
-                      <span className="text-base">{stepIcon(step.description)}</span>
-                      <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                      <span className="text-2xl leading-none">{stepIcon(step.description)}</span>
+
+                      <span
+                        className="text-xs text-center leading-tight font-medium"
+                        style={{
+                          color:
+                            status === "done" ? "#34d399"
+                            : status === "running" ? "var(--accent)"
+                            : "var(--text-muted)",
+                          maxWidth: 88,
+                        }}
+                      >
                         {step.description ?? `Step ${i + 1}`}
                       </span>
-                      {status === "running" && (
-                        <span className="text-xs font-mono ml-auto" style={{ color: "var(--accent)" }}>processing…</span>
-                      )}
-                      {status === "done" && (
-                        <span className="text-xs font-mono ml-auto" style={{ color: "#34d399" }}>done</span>
-                      )}
                     </div>
 
-                    {/* Output */}
-                    {status === "done" && result?.output && (
-                      <div
-                        className="px-4 pb-4 pt-1 text-sm font-mono whitespace-pre-wrap"
-                        style={{ color: "var(--text-secondary)", borderTop: "1px solid var(--border)" }}
-                      >
-                        {result.output}
-                      </div>
+                    {i < steps.length - 1 && (
+                      <span className="text-xl shrink-0" style={{ color: "rgba(245,158,11,0.3)" }}>→</span>
                     )}
                   </div>
+                );
+              })}
+            </div>
 
-                  {/* Arrow between steps */}
-                  {i < steps.length - 1 && (
-                    <div className="flex justify-center py-1">
-                      <span className="text-sm" style={{ color: "rgba(245,158,11,0.4)" }}>↓</span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {displayResult?.output && (
+              <div
+                className="mt-5 rounded-xl p-5"
+                style={{ backgroundColor: "var(--bg-base)", border: "1px solid var(--border)" }}
+              >
+                <p className="text-xs font-mono uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
+                  {displayStepInfo?.description ?? "Step"} · output
+                </p>
+                <p
+                  className="text-sm font-mono whitespace-pre-wrap leading-relaxed"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  {displayResult.output}
+                </p>
+              </div>
+            )}
           </div>
         )}
 
-        {/* ── Final captions ────────────────────────── */}
+        {/* Final Captions */}
         {finalCaptions.length > 0 && (
           <div
-            className="rounded-2xl overflow-hidden"
+            className="mt-6 rounded-2xl overflow-hidden"
             style={{
               border: "1px solid rgba(245,158,11,0.3)",
               background: "linear-gradient(135deg, rgba(245,158,11,0.06), rgba(249,115,22,0.03))",
             }}
           >
             <div
-              className="px-5 py-3 flex items-center gap-2"
+              className="px-6 py-4 flex items-center gap-3"
               style={{ borderBottom: "1px solid rgba(245,158,11,0.15)" }}
             >
-              <span className="text-lg">✍️</span>
-              <p className="text-sm font-bold" style={{ color: "var(--accent)" }}>
+              <span className="text-xl">✍️</span>
+              <p className="text-base font-bold" style={{ color: "var(--accent)" }}>
                 Generated Captions
               </p>
               <span
-                className="ml-auto text-xs font-mono px-2 py-0.5 rounded-full"
-                style={{ background: "rgba(245,158,11,0.12)", color: "var(--accent)" }}
+                className="ml-auto text-xs font-mono px-2.5 py-1 rounded-full font-bold"
+                style={{ background: "rgba(245,158,11,0.15)", color: "var(--accent)" }}
               >
                 {finalCaptions.length}
               </span>
             </div>
-            <div className="p-4 space-y-2.5">
+
+            <div className="p-5 space-y-3">
               {finalCaptions.map((caption, i) => (
                 <div
                   key={i}
-                  className="flex items-start gap-3 p-3 rounded-xl"
+                  className="flex items-start gap-4 p-4 rounded-xl"
                   style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}
                 >
                   <span
-                    className="text-xs font-mono font-bold shrink-0 mt-0.5 w-5 text-right"
-                    style={{ color: "var(--accent)" }}
+                    className="text-sm font-mono font-bold shrink-0 mt-0.5"
+                    style={{ color: "var(--accent)", minWidth: 20 }}
                   >
                     {i + 1}.
                   </span>
-                  <p className="text-sm italic" style={{ color: "var(--text-primary)" }}>
+                  <p className="text-sm italic leading-relaxed" style={{ color: "var(--text-primary)" }}>
                     "{caption}"
                   </p>
                 </div>

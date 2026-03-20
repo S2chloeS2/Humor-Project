@@ -76,62 +76,61 @@ export default function StepList({
 
   return (
     <div>
-      {/* ── Top bar ─────────────────────────────────────────── */}
+      {/* Top bar */}
       <div className="flex items-center justify-between mb-6">
-        <p className="text-xs font-mono uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
-          {steps.length} step{steps.length !== 1 ? "s" : ""} in pipeline
-        </p>
+        <div>
+          <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+            Pipeline Steps
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+            {steps.length === 0
+              ? "No steps yet"
+              : `${steps.length} step${steps.length !== 1 ? "s" : ""} · runs top to bottom`}
+          </p>
+        </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95"
           style={{ background: "linear-gradient(135deg, #f59e0b, #f97316)", color: "#0f172a" }}
         >
           + Add Step
         </button>
       </div>
 
-      {/* ── Empty state ─────────────────────────────────────── */}
+      {/* Empty state */}
       {steps.length === 0 && (
         <div
-          className="rounded-2xl p-12 text-center"
+          className="rounded-2xl p-14 text-center"
           style={{ border: "2px dashed var(--border-accent)", backgroundColor: "var(--bg-card)" }}
         >
-          <p className="text-4xl mb-3">⛓</p>
-          <p className="font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>No steps yet</p>
+          <p className="text-4xl mb-4">⛓</p>
+          <p className="font-semibold text-base mb-1" style={{ color: "var(--text-secondary)" }}>
+            No steps in this pipeline
+          </p>
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>
             Add your first step to start building the prompt chain.
           </p>
         </div>
       )}
 
-      {/* ── Pipeline ────────────────────────────────────────── */}
-      <div className="relative">
-        {/* Vertical connector line */}
-        {steps.length > 1 && (
-          <div
-            className="absolute left-[27px] top-12 bottom-12 w-0.5 z-0"
-            style={{ background: "linear-gradient(to bottom, rgba(245,158,11,0.4), rgba(245,158,11,0.05))" }}
+      {/* Steps */}
+      <div className="space-y-3">
+        {steps.map((step, idx) => (
+          <StepCard
+            key={step.id}
+            step={step}
+            idx={idx}
+            total={steps.length}
+            moving={movingId === step.id}
+            onMoveUp={() => move(step.id, "up")}
+            onMoveDown={() => move(step.id, "down")}
+            onEdit={() => setEditingStep(step)}
+            onDelete={() => deleteStep(step.id)}
           />
-        )}
-
-        <div className="relative z-10 flex flex-col gap-3">
-          {steps.map((step, idx) => (
-            <StepCard
-              key={step.id}
-              step={step}
-              idx={idx}
-              total={steps.length}
-              moving={movingId === step.id}
-              onMoveUp={() => move(step.id, "up")}
-              onMoveDown={() => move(step.id, "down")}
-              onEdit={() => setEditingStep(step)}
-              onDelete={() => deleteStep(step.id)}
-            />
-          ))}
-        </div>
+        ))}
       </div>
 
-      {/* ── Modals ──────────────────────────────────────────── */}
+      {/* Modals */}
       {showCreate && (
         <StepModal
           flavorId={flavorId}
@@ -160,7 +159,7 @@ export default function StepList({
   );
 }
 
-// ── Step Card ───────────────────────────────────────────────────────────────
+// ── Step Card ─────────────────────────────────────────────────────────
 
 function StepCard({
   step, idx, total, moving,
@@ -174,36 +173,36 @@ function StepCard({
 
   return (
     <div
-      className="rounded-2xl transition-all duration-200"
+      className="rounded-2xl transition-all duration-200 group"
       style={{
         backgroundColor: "var(--bg-card)",
         border: "1px solid var(--border)",
         opacity: moving ? 0.5 : 1,
+        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
       }}
     >
-      {/* ── Main row ─────────────────────────────── */}
-      <div className="flex items-center gap-4 px-5 py-4">
-
-        {/* Step circle */}
-        <div
-          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-bold font-mono"
-          style={{
-            background: "linear-gradient(135deg, rgba(245,158,11,0.2), rgba(249,115,22,0.1))",
-            border: "2px solid rgba(245,158,11,0.35)",
-            color: "var(--accent)",
-            fontSize: 14,
-          }}
-        >
-          {idx + 1}
+      <div className="flex items-center gap-4 px-6 py-5">
+        {/* Drag handle / step number */}
+        <div className="flex flex-col items-center gap-1 shrink-0">
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center font-bold font-mono text-sm"
+            style={{
+              background: "linear-gradient(135deg, rgba(245,158,11,0.15), rgba(249,115,22,0.08))",
+              border: "1.5px solid rgba(245,158,11,0.3)",
+              color: "var(--accent)",
+            }}
+          >
+            {idx + 1}
+          </div>
         </div>
 
-        {/* Icon + title */}
+        {/* Icon + title + meta */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2.5 mb-1">
             <span className="text-xl">{stepIcon(step.description)}</span>
-            <span className="font-semibold" style={{ color: "var(--text-primary)" }}>
+            <span className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>
               {step.description || (
-                <span style={{ color: "var(--text-muted)", fontStyle: "italic", fontWeight: 400 }}>
+                <span style={{ color: "var(--text-muted)", fontStyle: "italic", fontWeight: 400, fontSize: 14 }}>
                   Untitled step
                 </span>
               )}
@@ -214,18 +213,17 @@ function StepCard({
                 style={{
                   background: "rgba(96,165,250,0.08)",
                   color: "#60a5fa",
-                  border: "1px solid rgba(96,165,250,0.2)",
+                  border: "1px solid rgba(96,165,250,0.18)",
                 }}
               >
                 🌡 {step.llm_temperature}
               </span>
             )}
           </div>
-          {/* Prompt preview when collapsed */}
           {!expanded && step.llm_system_prompt && (
             <p
-              className="text-xs font-mono mt-1 truncate"
-              style={{ color: "var(--text-muted)", maxWidth: 460 }}
+              className="text-xs font-mono truncate"
+              style={{ color: "var(--text-muted)", maxWidth: 420 }}
             >
               {step.llm_system_prompt}
             </p>
@@ -233,14 +231,15 @@ function StepCard({
         </div>
 
         {/* Controls */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Reorder */}
           <div className="flex flex-col gap-0.5">
             <button
               onClick={onMoveUp}
               disabled={idx === 0 || moving}
               title="Move up"
-              className="w-6 h-5 flex items-center justify-center rounded text-xs disabled:opacity-20 hover:opacity-70 transition-opacity"
-              style={{ background: "rgba(245,158,11,0.1)", color: "var(--accent)" }}
+              className="w-7 h-6 flex items-center justify-center rounded-lg text-xs disabled:opacity-20 hover:opacity-70 transition-opacity"
+              style={{ background: "var(--bg-base)", color: "var(--accent)", border: "1px solid var(--border)" }}
             >
               ▲
             </button>
@@ -248,8 +247,8 @@ function StepCard({
               onClick={onMoveDown}
               disabled={idx === total - 1 || moving}
               title="Move down"
-              className="w-6 h-5 flex items-center justify-center rounded text-xs disabled:opacity-20 hover:opacity-70 transition-opacity"
-              style={{ background: "rgba(245,158,11,0.1)", color: "var(--accent)" }}
+              className="w-7 h-6 flex items-center justify-center rounded-lg text-xs disabled:opacity-20 hover:opacity-70 transition-opacity"
+              style={{ background: "var(--bg-base)", color: "var(--accent)", border: "1px solid var(--border)" }}
             >
               ▼
             </button>
@@ -257,9 +256,9 @@ function StepCard({
 
           <button
             onClick={() => setExpanded(!expanded)}
-            className="px-2.5 py-1.5 rounded-lg text-xs font-mono transition-all hover:opacity-80"
+            className="px-3 py-1.5 rounded-lg text-xs font-mono transition-all hover:opacity-80"
             style={{
-              background: expanded ? "rgba(245,158,11,0.12)" : "var(--bg-base)",
+              background: expanded ? "rgba(245,158,11,0.1)" : "var(--bg-base)",
               color: expanded ? "var(--accent)" : "var(--text-muted)",
               border: "1px solid var(--border)",
             }}
@@ -271,7 +270,7 @@ function StepCard({
             onClick={onEdit}
             className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-80"
             style={{
-              background: "rgba(245,158,11,0.1)",
+              background: "rgba(245,158,11,0.08)",
               color: "var(--accent)",
               border: "1px solid rgba(245,158,11,0.2)",
             }}
@@ -283,10 +282,10 @@ function StepCard({
         </div>
       </div>
 
-      {/* ── Expanded prompts ─────────────────────── */}
+      {/* Expanded prompts */}
       {expanded && (
         <div
-          className="px-5 pb-5 pt-3 flex flex-col gap-3"
+          className="px-6 pb-6 pt-4 flex flex-col gap-3"
           style={{ borderTop: "1px solid var(--border)" }}
         >
           {step.llm_system_prompt && (
@@ -297,7 +296,7 @@ function StepCard({
           )}
           {!step.llm_system_prompt && !step.llm_user_prompt && (
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-              No prompts configured yet. Click Edit to add them.
+              No prompts configured. Click Edit to add them.
             </p>
           )}
         </div>
@@ -312,7 +311,7 @@ function PromptBlock({ label, content, color }: { label: string; content: string
       className="rounded-xl p-4"
       style={{ backgroundColor: "var(--bg-base)", border: "1px solid var(--border)" }}
     >
-      <p className="text-xs font-mono font-bold uppercase tracking-wider mb-2" style={{ color }}>
+      <p className="text-xs font-mono font-bold uppercase tracking-wider mb-2.5" style={{ color }}>
         {label}
       </p>
       <p
@@ -329,17 +328,17 @@ function DeleteStepButton({ onDelete }: { onDelete: () => void }) {
   const [confirm, setConfirm] = useState(false);
   if (confirm) {
     return (
-      <div className="flex gap-1 items-center">
+      <div className="flex gap-1.5 items-center">
         <button
           onClick={onDelete}
-          className="text-xs px-2 py-1.5 rounded-lg font-mono"
-          style={{ background: "rgba(239,68,68,0.15)", color: "var(--danger)", border: "1px solid rgba(239,68,68,0.3)" }}
+          className="text-xs px-3 py-1.5 rounded-lg font-mono font-semibold"
+          style={{ background: "rgba(239,68,68,0.12)", color: "var(--danger)", border: "1px solid rgba(239,68,68,0.25)" }}
         >
           Yes
         </button>
         <button
           onClick={() => setConfirm(false)}
-          className="text-xs px-2 py-1.5 rounded-lg font-mono"
+          className="text-xs px-3 py-1.5 rounded-lg font-mono"
           style={{ border: "1px solid var(--border)", color: "var(--text-muted)", background: "transparent" }}
         >
           No
@@ -351,7 +350,7 @@ function DeleteStepButton({ onDelete }: { onDelete: () => void }) {
     <button
       onClick={() => setConfirm(true)}
       className="px-3 py-1.5 rounded-lg text-xs font-mono transition-all hover:opacity-80"
-      style={{ background: "rgba(239,68,68,0.08)", color: "var(--danger)", border: "1px solid rgba(239,68,68,0.2)" }}
+      style={{ background: "rgba(239,68,68,0.06)", color: "var(--danger)", border: "1px solid rgba(239,68,68,0.18)" }}
     >
       Delete
     </button>
