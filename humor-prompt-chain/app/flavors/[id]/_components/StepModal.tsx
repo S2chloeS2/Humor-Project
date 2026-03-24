@@ -17,10 +17,6 @@ interface Step {
   llm_output_type_id: number | null;
 }
 
-interface StepTypeMeta { id: number; slug: string; description: string | null; }
-interface ModelMeta { id: number; name: string; llm_provider_id: number; is_temperature_supported: boolean; }
-interface IOMeta { id: number; slug: string; description: string | null; }
-
 interface Props {
   flavorId: string;
   step?: Step;
@@ -29,82 +25,63 @@ interface Props {
   onSaved: (step: Step) => void;
 }
 
+// Auto-config based on step order:
+// Step 1 → Celebrity recognition (type 1), Gemini, image input
+// Step 2 → Image description (type 2), Gemini, image input
+// Step 3+ → General / caption (type 3), GPT 5 Mini, text input
+function getAutoConfig(order: number) {
+  if (order === 1) return {
+    stepTypeId: 1, modelId: 14, inputTypeId: 1, outputTypeId: 1,
+    label: "🌟 Celebrity Recognition",
+    hint: "Identifies celebrities, brands, and notable content in the image.",
+    defaultSystemPrompt: "You are an expert at identifying celebrities, public figures, brands, and cultural references in images. Be thorough and specific.",
+    defaultUserPrompt: "Identify any famous or recognizable people, brands, or cultural references in this image. Be specific about names and context.",
+  };
+  if (order === 2) return {
+    stepTypeId: 2, modelId: 14, inputTypeId: 1, outputTypeId: 1,
+    label: "👁 Image Description",
+    hint: "Describes the image in detail using the recognition context from step 1.",
+    defaultSystemPrompt: "You are a detailed image description assistant. Describe images vividly and accurately.",
+    defaultUserPrompt: "Using this recognition context: ${step1Output}\n\nDescribe this image in rich detail including the subjects, setting, mood, and any humorous or interesting elements.",
+  };
+  return {
+    stepTypeId: 3, modelId: 17, inputTypeId: 2, outputTypeId: 2,
+    label: "⚙️ Caption Generation",
+    hint: "Takes previous step outputs as text and generates funny captions.",
+    defaultSystemPrompt: "You are a witty and funny caption writer. Generate short, punchy captions that are relatable and humorous. Return a JSON array of strings.",
+    defaultUserPrompt: "Image description: ${step2Output}\n\nPeople/brands identified: ${step1Output}\n\nWrite 5 short funny captions (under 60 chars each). Return as a JSON array.",
+  };
+}
+
 export default function StepModal({ flavorId, step, nextOrder = 1, onClose, onSaved }: Props) {
   const isEdit = !!step;
   const [mounted, setMounted] = useState(false);
 
-  // Metadata
-  const [stepTypes, setStepTypes] = useState<StepTypeMeta[]>([]);
-  const [models, setModels] = useState<ModelMeta[]>([]);
-  const [inputTypes, setInputTypes] = useState<IOMeta[]>([]);
-  const [outputTypes, setOutputTypes] = useState<IOMeta[]>([]);
-  const [metaLoading, setMetaLoading] = useState(true);
+  const autoConfig = getAutoConfig(isEdit ? (step?.order_by ?? nextOrder) : nextOrder);
 
-  // Form fields
   const [description, setDescription] = useState(step?.description ?? "");
-  const [stepTypeId, setStepTypeId] = useState<number | "">(step?.humor_flavor_step_type_id ?? "");
-  const [modelId, setModelId] = useState<number | "">(step?.llm_model_id ?? "");
-  const [inputTypeId, setInputTypeId] = useState<number | "">(step?.llm_input_type_id ?? "");
-  const [outputTypeId, setOutputTypeId] = useState<number | "">(step?.llm_output_type_id ?? "");
-  const [systemPrompt, setSystemPrompt] = useState(step?.llm_system_prompt ?? "");
-  const [userPrompt, setUserPrompt] = useState(step?.llm_user_prompt ?? "");
-  const [temperature, setTemperature] = useState(String(step?.llm_temperature ?? "0.7"));
+  const [systemPrompt, setSystemPrompt] = useState(step?.llm_system_prompt ?? autoConfig.defaultSystemPrompt);
+  const [userPrompt, setUserPrompt] = useState(step?.llm_user_prompt ?? autoConfig.defaultUserPrompt);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => { setMounted(true); }, []);
 
-  useEffect(() => {
-    fetch("/api/step-types")
-      .then((r) => r.json())
-      .then((d) => {
-        setStepTypes(d.stepTypes ?? []);
-        setModels(d.models ?? []);
-        setInputTypes(d.inputTypes ?? []);
-        setOutputTypes(d.outputTypes ?? []);
-      })
-      .finally(() => setMetaLoading(false));
-  }, []);
-
-  function handleStepTypeChange(id: number) {
-    setStepTypeId(id);
-    if (!isEdit) {
-      if (id === 1 || id === 2) {
-        setInputTypeId(1);   // image-and-text
-        setOutputTypeId(1);  // string
-        setModelId(14);      // Gemini 2.5 Pro (works with humorFlavorId)
-        setTemperature("");  // Gemini doesn't support temperature
-      } else {
-        setInputTypeId(2);   // text-only
-        setOutputTypeId(2);  // array
-        setModelId(17);      // GPT 5 Mini (works with humorFlavorId)
-        setTemperature("");
-      }
-    }
-  }
-
-  const selectedModel = models.find((m) => m.id === modelId);
-  const tempSupported = selectedModel?.is_temperature_supported ?? true;
-  const isPresetType = stepTypeId === 1 || stepTypeId === 2;
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!stepTypeId) { setError("Step type is required"); return; }
-    if (!modelId) { setError("Model is required"); return; }
-    if (!inputTypeId) { setError("Input type is required"); return; }
-    if (!outputTypeId) { setError("Output type is required"); return; }
     setLoading(true);
     setError("");
 
+    // For edit, keep existing type/model if already set; otherwise use auto config
     const body = {
       description: description.trim() || null,
-      humor_flavor_step_type_id: stepTypeId,
-      llm_model_id: modelId,
-      llm_input_type_id: inputTypeId,
-      llm_output_type_id: outputTypeId,
+      humor_flavor_step_type_id: step?.humor_flavor_step_type_id ?? autoConfig.stepTypeId,
+      llm_model_id: step?.llm_model_id ?? autoConfig.modelId,
+      llm_input_type_id: step?.llm_input_type_id ?? autoConfig.inputTypeId,
+      llm_output_type_id: step?.llm_output_type_id ?? autoConfig.outputTypeId,
       llm_system_prompt: systemPrompt.trim() || null,
       llm_user_prompt: userPrompt.trim() || null,
-      llm_temperature: (tempSupported && temperature) ? (parseFloat(temperature) || null) : null,
+      llm_temperature: null,
       ...(isEdit ? {} : { order_by: nextOrder }),
     };
 
@@ -132,6 +109,14 @@ export default function StepModal({ flavorId, step, nextOrder = 1, onClose, onSa
 
   if (!mounted) return null;
 
+  const stepLabel = isEdit
+    ? (step?.humor_flavor_step_type_id === 1 ? "🌟 Celebrity Recognition"
+      : step?.humor_flavor_step_type_id === 2 ? "👁 Image Description"
+      : "⚙️ Caption Generation")
+    : autoConfig.label;
+
+  const stepHint = isEdit ? "" : autoConfig.hint;
+
   return createPortal(
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
@@ -139,192 +124,99 @@ export default function StepModal({ flavorId, step, nextOrder = 1, onClose, onSa
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="w-full max-w-2xl rounded-xl p-6 animate-fade-up max-h-[90vh] overflow-y-auto"
+        className="w-full max-w-xl rounded-xl p-6 animate-fade-up max-h-[90vh] overflow-y-auto"
         style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-accent)" }}
       >
-        <h2 className="text-lg font-bold mb-5" style={{ color: "var(--text-primary)" }}>
-          {isEdit ? "Edit Step" : `Add Step ${nextOrder}`}
-        </h2>
+        <div className="mb-5">
+          <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
+            {isEdit ? "Edit Step" : `Add Step ${nextOrder}`}
+          </h2>
+          <div className="mt-2 flex items-center gap-2">
+            <span
+              className="text-xs font-mono px-2.5 py-1 rounded-full font-semibold"
+              style={{ background: "rgba(245,158,11,0.12)", color: "var(--accent)", border: "1px solid rgba(245,158,11,0.25)" }}
+            >
+              {stepLabel}
+            </span>
+          </div>
+          {stepHint && (
+            <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>{stepHint}</p>
+          )}
+        </div>
 
-        {metaLoading ? (
-          <p className="text-sm text-center py-8" style={{ color: "var(--text-muted)" }}>Loading options…</p>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Description */}
-            <div>
-              <label className="block text-xs font-mono uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
-                Description <span className="normal-case font-normal">(optional label)</span>
-              </label>
-              <input
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="What does this step do?"
-                className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                style={{ backgroundColor: "var(--bg-base)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
-              />
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Description */}
+          <div>
+            <label className="block text-xs font-mono uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
+              Label <span className="normal-case font-normal">(optional)</span>
+            </label>
+            <input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={isEdit ? "" : `e.g. "${nextOrder === 1 ? "Spot the famous faces" : nextOrder === 2 ? "Describe the scene" : "Write funny captions"}"`}
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+              style={{ backgroundColor: "var(--bg-base)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+            />
+          </div>
 
-            {/* Step Type */}
-            <div>
-              <label className="block text-xs font-mono uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
-                Step Type <span className="text-red-400">*</span>
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {stepTypes.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => handleStepTypeChange(t.id)}
-                    className="px-3 py-3 rounded-lg text-xs font-semibold text-left transition-all"
-                    style={{
-                      background: stepTypeId === t.id ? "rgba(245,158,11,0.15)" : "var(--bg-base)",
-                      border: stepTypeId === t.id ? "1.5px solid rgba(245,158,11,0.5)" : "1px solid var(--border)",
-                      color: stepTypeId === t.id ? "var(--accent)" : "var(--text-secondary)",
-                    }}
-                  >
-                    <span className="block font-mono font-bold text-xs mb-0.5">
-                      {t.slug === "celebrity-recognition" ? "🌟 Celebrity" :
-                       t.slug === "image-description" ? "👁 Vision" : "⚙️ General"}
-                    </span>
-                    <span className="text-xs" style={{ opacity: 0.7 }}>{t.slug}</span>
-                  </button>
-                ))}
-              </div>
-              {isPresetType && (
-                <p className="text-xs mt-1.5 px-1" style={{ color: "rgba(96,165,250,0.8)" }}>
-                  ℹ️ Built-in preprocessing — uses cached vision model. Prompts below are optional overrides.
-                </p>
-              )}
-            </div>
+          {/* System Prompt */}
+          <div>
+            <label className="block text-xs font-mono uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
+              System Prompt <span className="text-red-400">*</span>
+            </label>
+            <textarea
+              value={systemPrompt}
+              onChange={(e) => setSystemPrompt(e.target.value)}
+              placeholder="You are a helpful assistant that..."
+              rows={3}
+              className="w-full px-3 py-2 rounded-lg text-sm font-mono outline-none resize-y"
+              style={{ backgroundColor: "var(--bg-base)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+            />
+          </div>
 
-            {/* Model */}
-            <div>
-              <label className="block text-xs font-mono uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
-                Model <span className="text-red-400">*</span>
-              </label>
-              <select
-                value={modelId}
-                onChange={(e) => setModelId(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                style={{ backgroundColor: "var(--bg-base)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
-              >
-                <option value="">— select model —</option>
-                {models.filter((m) => m.id < 50).map((m) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
-            </div>
+          {/* User Prompt */}
+          <div>
+            <label className="block text-xs font-mono uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
+              User Prompt <span className="normal-case font-normal">(optional)</span>
+            </label>
+            <p className="text-xs mb-1.5" style={{ color: "rgba(96,165,250,0.7)" }}>
+              Use <code>{"${step1Output}"}</code>, <code>{"${step2Output}"}</code> to chain previous outputs
+            </p>
+            <textarea
+              value={userPrompt}
+              onChange={(e) => setUserPrompt(e.target.value)}
+              placeholder={
+                nextOrder === 3
+                  ? "Based on: ${step2Output}\nCelebrities: ${step1Output}\nWrite 5 funny captions."
+                  : "Describe this image in detail..."
+              }
+              rows={4}
+              className="w-full px-3 py-2 rounded-lg text-sm font-mono outline-none resize-y"
+              style={{ backgroundColor: "var(--bg-base)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+            />
+          </div>
 
-            {/* Input / Output Types */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-mono uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
-                  Input Type <span className="text-red-400">*</span>
-                </label>
-                <select
-                  value={inputTypeId}
-                  onChange={(e) => setInputTypeId(Number(e.target.value))}
-                  disabled={isPresetType}
-                  className="w-full px-3 py-2 rounded-lg text-sm outline-none disabled:opacity-60"
-                  style={{ backgroundColor: "var(--bg-base)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
-                >
-                  <option value="">— select —</option>
-                  {inputTypes.map((t) => (
-                    <option key={t.id} value={t.id}>{t.slug} — {t.description}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-mono uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
-                  Output Type <span className="text-red-400">*</span>
-                </label>
-                <select
-                  value={outputTypeId}
-                  onChange={(e) => setOutputTypeId(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                  style={{ backgroundColor: "var(--bg-base)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
-                >
-                  <option value="">— select —</option>
-                  {outputTypes.map((t) => (
-                    <option key={t.id} value={t.id}>{t.slug} — {t.description}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
+          {error && <p className="text-sm" style={{ color: "var(--danger)" }}>{error}</p>}
 
-            {/* System Prompt */}
-            <div>
-              <label className="block text-xs font-mono uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
-                System Prompt {isPresetType && <span className="normal-case font-normal">(optional override)</span>}
-              </label>
-              <textarea
-                value={systemPrompt}
-                onChange={(e) => setSystemPrompt(e.target.value)}
-                placeholder="You are a helpful assistant that..."
-                rows={4}
-                className="w-full px-3 py-2 rounded-lg text-sm font-mono outline-none resize-y"
-                style={{ backgroundColor: "var(--bg-base)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
-              />
-            </div>
-
-            {/* User Prompt */}
-            <div>
-              <label className="block text-xs font-mono uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
-                User Prompt {isPresetType && <span className="normal-case font-normal">(optional override)</span>}
-                <span className="ml-2 normal-case text-xs" style={{ color: "rgba(96,165,250,0.7)" }}>
-                  vars: {"${step1Output}"}, {"${imageDescription}"}, {"${tenRandomTerms}"}…
-                </span>
-              </label>
-              <textarea
-                value={userPrompt}
-                onChange={(e) => setUserPrompt(e.target.value)}
-                placeholder="Given this image: ${imageDescription}, write something funny..."
-                rows={4}
-                className="w-full px-3 py-2 rounded-lg text-sm font-mono outline-none resize-y"
-                style={{ backgroundColor: "var(--bg-base)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
-              />
-            </div>
-
-            {/* Temperature */}
-            <div>
-              <label className="block text-xs font-mono uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
-                Temperature <span className="normal-case">(0.0 – 2.0){!tempSupported && modelId ? " — not supported by selected model" : ""}</span>
-              </label>
-              <input
-                type="number"
-                value={temperature}
-                onChange={(e) => setTemperature(e.target.value)}
-                min="0"
-                max="2"
-                step="0.1"
-                disabled={!tempSupported && !!modelId}
-                className="w-32 px-3 py-2 rounded-lg text-sm font-mono outline-none disabled:opacity-40"
-                style={{ backgroundColor: "var(--bg-base)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
-              />
-            </div>
-
-            {error && <p className="text-sm" style={{ color: "var(--danger)" }}>{error}</p>}
-
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 py-2 rounded-lg text-sm font-mono"
-                style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", background: "transparent" }}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
-                style={{ background: "linear-gradient(135deg, #f59e0b, #f97316)", color: "#0f172a" }}
-              >
-                {loading ? "Saving..." : isEdit ? "Save Changes" : "Add Step"}
-              </button>
-            </div>
-          </form>
-        )}
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2 rounded-lg text-sm font-mono"
+              style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", background: "transparent" }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
+              style={{ background: "linear-gradient(135deg, #f59e0b, #f97316)", color: "#0f172a" }}
+            >
+              {loading ? "Saving..." : isEdit ? "Save Changes" : "Add Step"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>,
     document.body
