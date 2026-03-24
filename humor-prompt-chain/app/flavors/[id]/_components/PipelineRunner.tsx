@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 
 interface Step {
   id: string;
@@ -46,6 +46,43 @@ export default function PipelineRunner({
   const [error, setError] = useState("");
   const [ran, setRan] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadFile = useCallback(async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setError("이미지 파일만 업로드 가능합니다.");
+      return;
+    }
+    setUploading(true);
+    setError("");
+    setImgError(false);
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch("/api/upload-image", { method: "POST", body: form });
+    const data = await res.json();
+    setUploading(false);
+    if (!res.ok) {
+      setError(data.error || "Upload failed");
+      return;
+    }
+    setImageUrl(data.url);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) uploadFile(file);
+  }, [uploadFile]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback(() => setDragOver(false), []);
 
   const hasSteps = steps.length > 0;
 
@@ -101,6 +138,8 @@ export default function PipelineRunner({
     setRan(false);
     setRunning(false);
     setImgError(false);
+    setUploading(false);
+    setImageUrl("");
   }
 
   const lastDoneIdx = stepResults.reduceRight(
@@ -172,34 +211,75 @@ export default function PipelineRunner({
       <div className="p-8">
         {/* Image Section */}
         <form onSubmit={handleRun}>
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f); e.target.value = ""; }}
+          />
+
+          {/* Drop zone */}
           <div
-            className="rounded-2xl mb-4 flex items-center justify-center overflow-hidden"
+            className="rounded-2xl mb-4 flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-200"
             style={{
               minHeight: 220,
-              background: imageUrl && !imgError
-                ? "var(--bg-base)"
-                : `repeating-linear-gradient(-45deg, transparent, transparent 12px, rgba(245,158,11,0.025) 12px, rgba(245,158,11,0.025) 24px)`,
-              border: imageUrl && !imgError
-                ? "2px solid rgba(245,158,11,0.25)"
-                : "2px dashed rgba(245,158,11,0.18)",
+              background: dragOver
+                ? "rgba(245,158,11,0.06)"
+                : imageUrl && !imgError
+                  ? "var(--bg-base)"
+                  : `repeating-linear-gradient(-45deg, transparent, transparent 12px, rgba(245,158,11,0.025) 12px, rgba(245,158,11,0.025) 24px)`,
+              border: dragOver
+                ? "2px dashed rgba(245,158,11,0.6)"
+                : imageUrl && !imgError
+                  ? "2px solid rgba(245,158,11,0.25)"
+                  : "2px dashed rgba(245,158,11,0.18)",
+              boxShadow: dragOver ? "0 0 30px rgba(245,158,11,0.12)" : "none",
             }}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onClick={() => !running && !uploading && fileInputRef.current?.click()}
           >
-            {imageUrl && !imgError ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={imageUrl}
-                alt="preview"
-                className="max-h-72 max-w-full object-contain"
-                onError={() => setImgError(true)}
-              />
-            ) : (
+            {uploading ? (
               <div className="text-center px-8 py-10 select-none">
-                <div className="text-5xl mb-4" style={{ opacity: 0.2 }}>🖼</div>
+                <span
+                  className="inline-block w-8 h-8 rounded-full border-2 border-current border-t-transparent mb-4"
+                  style={{ animation: "spin 0.7s linear infinite", color: "var(--accent)" }}
+                />
+                <p className="text-sm font-medium" style={{ color: "var(--accent)" }}>Uploading…</p>
+              </div>
+            ) : imageUrl && !imgError ? (
+              <div className="relative w-full h-full flex items-center justify-center group">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imageUrl}
+                  alt="preview"
+                  className="max-h-72 max-w-full object-contain"
+                  onError={() => setImgError(true)}
+                />
+                <div
+                  className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"
+                  style={{ background: "rgba(0,0,0,0.45)" }}
+                >
+                  <p className="text-sm font-medium text-white">클릭하여 이미지 교체</p>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center px-8 py-10 select-none pointer-events-none">
+                <div className="text-5xl mb-4" style={{ opacity: dragOver ? 0.5 : 0.2 }}>
+                  {dragOver ? "⬇️" : "🖼"}
+                </div>
                 <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>
-                  {imgError ? "Could not load image — check the URL" : "Image preview will appear here"}
+                  {imgError
+                    ? "이미지를 불러올 수 없습니다 — URL을 확인하세요"
+                    : dragOver
+                      ? "여기에 놓으세요"
+                      : "이미지를 드래그하거나 클릭해서 업로드"}
                 </p>
                 <p className="text-xs mt-1.5" style={{ color: "var(--text-muted)", opacity: 0.6 }}>
-                  Paste a public image URL in the field below
+                  또는 아래에 URL 붙여넣기 · 최대 10MB
                 </p>
               </div>
             )}
@@ -207,12 +287,11 @@ export default function PipelineRunner({
 
           <div className="flex gap-3">
             <input
-              type="url"
+              type="text"
               value={imageUrl}
               onChange={(e) => { setImageUrl(e.target.value); setImgError(false); }}
               placeholder="https://example.com/image.jpg"
-              required
-              disabled={running}
+              disabled={running || uploading}
               className="flex-1 px-4 py-3 rounded-xl text-sm outline-none transition-all"
               style={{
                 backgroundColor: "var(--bg-base)",
@@ -224,7 +303,7 @@ export default function PipelineRunner({
             />
             <button
               type="submit"
-              disabled={!imageUrl.trim() || running || !hasSteps}
+              disabled={!imageUrl.trim() || running || uploading || !hasSteps}
               className="flex items-center gap-2.5 px-8 py-3 rounded-xl font-bold text-sm transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
                 background: "linear-gradient(135deg, #f59e0b, #f97316)",

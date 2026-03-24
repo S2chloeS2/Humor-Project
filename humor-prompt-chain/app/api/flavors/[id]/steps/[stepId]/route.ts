@@ -28,6 +28,10 @@ export async function PATCH(
 
   const update: Record<string, any> = {};
   if (body.description !== undefined) update.description = body.description;
+  if (body.humor_flavor_step_type_id !== undefined) update.humor_flavor_step_type_id = body.humor_flavor_step_type_id;
+  if (body.llm_model_id !== undefined) update.llm_model_id = body.llm_model_id;
+  if (body.llm_input_type_id !== undefined) update.llm_input_type_id = body.llm_input_type_id;
+  if (body.llm_output_type_id !== undefined) update.llm_output_type_id = body.llm_output_type_id;
   if (body.llm_system_prompt !== undefined) update.llm_system_prompt = body.llm_system_prompt;
   if (body.llm_user_prompt !== undefined) update.llm_user_prompt = body.llm_user_prompt;
   if (body.llm_temperature !== undefined) update.llm_temperature = body.llm_temperature;

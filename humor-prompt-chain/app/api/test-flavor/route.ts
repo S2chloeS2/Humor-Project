@@ -20,36 +20,67 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { flavorId, flavorSlug, imageUrl } = await request.json();
+  const { flavorId, imageUrl } = await request.json();
   if (!imageUrl) return NextResponse.json({ error: "imageUrl is required" }, { status: 400 });
+  if (!flavorId) return NextResponse.json({ error: "flavorId is required" }, { status: 400 });
 
-  // Get Supabase session token for the API
+  // Parse flavorId as integer (API requires numeric ID, not string)
+  const humorFlavorId = parseInt(String(flavorId), 10);
+  if (isNaN(humorFlavorId)) {
+    return NextResponse.json({ error: "Invalid flavorId" }, { status: 400 });
+  }
+
+  // Get JWT token
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
+  if (!token) return NextResponse.json({ error: "No session token" }, { status: 401 });
 
-  // Call the external pipeline API
-  const apiRes = await fetch(`${API_BASE}/pipeline`, {
+  const headers = {
+    "Authorization": `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+
+  // Step 3: Register image URL
+  const registerRes = await fetch(`${API_BASE}/pipeline/upload-image-from-url`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify({
-      image_url: imageUrl,
-      humor_flavor_id: flavorId,
-      humor_flavor_slug: flavorSlug,
-    }),
+    headers,
+    body: JSON.stringify({ imageUrl, isCommonUse: false }),
   });
 
-  if (!apiRes.ok) {
-    let errText = "";
-    try { errText = await apiRes.text(); } catch {}
+  if (!registerRes.ok) {
+    const err = await registerRes.text();
     return NextResponse.json(
-      { error: `Pipeline API error (${apiRes.status}): ${errText}` },
-      { status: apiRes.status }
+      { error: `Image register error (${registerRes.status}): ${err}` },
+      { status: registerRes.status }
     );
   }
 
-  const result = await apiRes.json();
-  return NextResponse.json(result);
+  const { imageId } = await registerRes.json();
+  if (!imageId) return NextResponse.json({ error: "No imageId returned from API" }, { status: 500 });
+
+  // Step 4: Generate captions
+  const captionRes = await fetch(`${API_BASE}/pipeline/generate-captions`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ imageId, humorFlavorId }),
+  });
+
+  if (!captionRes.ok) {
+    const err = await captionRes.text();
+    return NextResponse.json(
+      { error: `Caption error (${captionRes.status}): ${err}` },
+      { status: captionRes.status }
+    );
+  }
+
+  const captionData = await captionRes.json();
+
+  // Extract caption strings from response array
+  const captions: string[] = Array.isArray(captionData)
+    ? captionData.map((c: any) =>
+        c.caption ?? c.caption_text ?? c.text ?? c.content ?? JSON.stringify(c)
+      )
+    : [];
+
+  return NextResponse.json({ captions, steps: [] });
 }

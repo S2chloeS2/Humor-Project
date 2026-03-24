@@ -12,9 +12,31 @@ interface Step {
   llm_user_prompt: string | null;
   llm_temperature: number | null;
   humor_flavor_id: string;
+  humor_flavor_step_type_id: number | null;
+  llm_model_id: number | null;
+  llm_input_type_id: number | null;
+  llm_output_type_id: number | null;
 }
 
-function stepIcon(desc: string | null): string {
+const STEP_TYPE_LABELS: Record<number, string> = {
+  1: "🌟 Celebrity",
+  2: "👁 Vision",
+  3: "⚙️ General",
+};
+
+const INPUT_TYPE_LABELS: Record<number, string> = {
+  1: "image+text",
+  2: "text",
+};
+
+const OUTPUT_TYPE_LABELS: Record<number, string> = {
+  1: "string",
+  2: "array",
+};
+
+function stepIcon(desc: string | null, typeId: number | null): string {
+  if (typeId === 1) return "🌟";
+  if (typeId === 2) return "👁";
   const d = (desc ?? "").toLowerCase();
   if (d.includes("descri") || d.includes("image") || d.includes("vision")) return "👁";
   if (d.includes("funny") || d.includes("joke") || d.includes("humor") || d.includes("absurd")) return "😂";
@@ -182,7 +204,7 @@ function StepCard({
       }}
     >
       <div className="flex items-center gap-4 px-6 py-5">
-        {/* Drag handle / step number */}
+        {/* Step number */}
         <div className="flex flex-col items-center gap-1 shrink-0">
           <div
             className="w-9 h-9 rounded-xl flex items-center justify-center font-bold font-mono text-sm"
@@ -198,8 +220,8 @@ function StepCard({
 
         {/* Icon + title + meta */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2.5 mb-1">
-            <span className="text-xl">{stepIcon(step.description)}</span>
+          <div className="flex items-center gap-2.5 mb-1 flex-wrap">
+            <span className="text-xl">{stepIcon(step.description, step.humor_flavor_step_type_id)}</span>
             <span className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>
               {step.description || (
                 <span style={{ color: "var(--text-muted)", fontStyle: "italic", fontWeight: 400, fontSize: 14 }}>
@@ -207,13 +229,49 @@ function StepCard({
                 </span>
               )}
             </span>
-            {step.llm_temperature !== null && (
+            {step.humor_flavor_step_type_id && (
+              <span
+                className="text-xs font-mono px-2 py-0.5 rounded-full"
+                style={{
+                  background: "rgba(167,139,250,0.08)",
+                  color: "#a78bfa",
+                  border: "1px solid rgba(167,139,250,0.18)",
+                }}
+              >
+                {STEP_TYPE_LABELS[step.humor_flavor_step_type_id] ?? `type:${step.humor_flavor_step_type_id}`}
+              </span>
+            )}
+            {step.llm_input_type_id && (
+              <span
+                className="text-xs font-mono px-2 py-0.5 rounded-full"
+                style={{
+                  background: "rgba(52,211,153,0.08)",
+                  color: "#34d399",
+                  border: "1px solid rgba(52,211,153,0.18)",
+                }}
+              >
+                in:{INPUT_TYPE_LABELS[step.llm_input_type_id] ?? step.llm_input_type_id}
+              </span>
+            )}
+            {step.llm_output_type_id && (
               <span
                 className="text-xs font-mono px-2 py-0.5 rounded-full"
                 style={{
                   background: "rgba(96,165,250,0.08)",
                   color: "#60a5fa",
                   border: "1px solid rgba(96,165,250,0.18)",
+                }}
+              >
+                out:{OUTPUT_TYPE_LABELS[step.llm_output_type_id] ?? step.llm_output_type_id}
+              </span>
+            )}
+            {step.llm_temperature !== null && (
+              <span
+                className="text-xs font-mono px-2 py-0.5 rounded-full"
+                style={{
+                  background: "rgba(249,115,22,0.08)",
+                  color: "#f97316",
+                  border: "1px solid rgba(249,115,22,0.18)",
                 }}
               >
                 🌡 {step.llm_temperature}

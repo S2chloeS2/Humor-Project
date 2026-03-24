@@ -34,7 +34,9 @@ export default async function FlavorDetailPage({
 
   const { data: steps } = await admin
     .from("humor_flavor_steps")
-    .select("id, description, order_by, llm_system_prompt, llm_user_prompt, llm_temperature, humor_flavor_id")
+    .select(
+      "id, description, order_by, llm_system_prompt, llm_user_prompt, llm_temperature, humor_flavor_id, humor_flavor_step_type_id, llm_model_id, llm_input_type_id, llm_output_type_id"
+    )
     .eq("humor_flavor_id", id)
     .order("order_by");
 

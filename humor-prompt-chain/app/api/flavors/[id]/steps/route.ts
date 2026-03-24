@@ -29,12 +29,16 @@ export async function POST(
   const { data, error } = await ctx.admin
     .from("humor_flavor_steps")
     .insert({
-      humor_flavor_id: flavorId,
+      humor_flavor_id: parseInt(flavorId, 10),
       order_by: body.order_by ?? 1,
       description: body.description ?? null,
+      humor_flavor_step_type_id: body.humor_flavor_step_type_id ?? null,
+      llm_model_id: body.llm_model_id ?? null,
+      llm_input_type_id: body.llm_input_type_id ?? null,
+      llm_output_type_id: body.llm_output_type_id ?? null,
       llm_system_prompt: body.llm_system_prompt ?? null,
       llm_user_prompt: body.llm_user_prompt ?? null,
-      llm_temperature: body.llm_temperature ?? 0.7,
+      llm_temperature: body.llm_temperature ?? null,
     })
     .select()
     .single();
