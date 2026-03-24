@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 interface Flavor {
   id: string;
-  slug: string;
+  name: string;
   description: string | null;
   created_datetime_utc: string;
 }
@@ -13,7 +13,7 @@ interface Flavor {
 export default function FlavorEditor({ flavor }: { flavor: Flavor }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
-  const [slug, setSlug] = useState(flavor.slug);
+  const [name, setName] = useState(flavor.name);
   const [description, setDescription] = useState(flavor.description ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -26,7 +26,7 @@ export default function FlavorEditor({ flavor }: { flavor: Flavor }) {
     const res = await fetch(`/api/flavors/${flavor.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ slug: slug.trim(), description: description.trim() }),
+      body: JSON.stringify({ name: name.trim(), description: description.trim() }),
     });
 
     if (!res.ok) {
@@ -54,7 +54,7 @@ export default function FlavorEditor({ flavor }: { flavor: Flavor }) {
               Slug *
             </label>
             <input
-              value={slug}
+              value={name}
               onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
               required
               className="w-full px-3 py-2 rounded-lg text-sm font-mono outline-none"
@@ -77,7 +77,7 @@ export default function FlavorEditor({ flavor }: { flavor: Flavor }) {
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => { setEditing(false); setSlug(flavor.slug); setDescription(flavor.description ?? ""); }}
+              onClick={() => { setEditing(false); setName(flavor.name); setDescription(flavor.description ?? ""); }}
               className="px-4 py-2 rounded-lg text-sm font-mono"
               style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", background: "transparent" }}
             >
@@ -111,7 +111,7 @@ export default function FlavorEditor({ flavor }: { flavor: Flavor }) {
             ◈
           </div>
           <h1 className="text-xl font-bold font-mono" style={{ color: "var(--accent)" }}>
-            {flavor.slug}
+            {flavor.name}
           </h1>
         </div>
         {flavor.description && (

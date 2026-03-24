@@ -27,7 +27,7 @@ export default async function FlavorDetailPage({
 
   const { data: flavor } = await admin
     .from("humor_flavors")
-    .select("id, slug, description, created_datetime_utc")
+    .select("id, name, description, created_datetime_utc")
     .eq("id", id)
     .single();
   if (!flavor) notFound();
@@ -62,7 +62,7 @@ export default async function FlavorDetailPage({
 
         {/* ── RUN PIPELINE — Primary focus ── */}
         <div className="mb-12 animate-fade-up" style={{ animationDelay: "60ms" }}>
-          <PipelineRunner flavorId={id} flavorSlug={flavor.slug} steps={sortedSteps} />
+          <PipelineRunner flavorId={id} flavorSlug={flavor.name} steps={sortedSteps} />
         </div>
 
         {/* Divider */}

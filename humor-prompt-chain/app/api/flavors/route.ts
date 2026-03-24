@@ -20,13 +20,13 @@ export async function POST(request: Request) {
   const ctx = await checkAdmin();
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { slug, description } = await request.json();
-  if (!slug) return NextResponse.json({ error: "slug is required" }, { status: 400 });
+  const { name, description } = await request.json();
+  if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 });
 
   const { data, error } = await ctx.admin
     .from("humor_flavors")
     .insert({
-      slug,
+      name,
       description: description || null,
       created_datetime_utc: new Date().toISOString(),
     })

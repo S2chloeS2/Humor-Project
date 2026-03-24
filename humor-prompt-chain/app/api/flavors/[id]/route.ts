@@ -26,7 +26,7 @@ export async function PATCH(
   const { id } = await params;
   const body = await request.json();
   const update: Record<string, any> = {};
-  if (body.slug !== undefined) update.slug = body.slug;
+  if (body.name !== undefined) update.name = body.name;
   if (body.description !== undefined) update.description = body.description || null;
 
   const { data, error } = await ctx.admin

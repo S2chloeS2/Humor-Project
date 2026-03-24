@@ -7,172 +7,119 @@ import { useRouter } from "next/navigation";
 export default function CreateFlavorButton() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [rawName, setRawName] = useState("");
+  const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [rawSlug, setRawSlug] = useState("");
-  const [description, setDescription] = useState("");
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
-  // Compute the actual slug from raw input (shown as preview, sent on submit)
-  const slug = rawSlug.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!slug) return;
+    const name = rawName.trim();
+    if (!name) return;
     setLoading(true);
     setError("");
-
     const res = await fetch("/api/flavors", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ slug, description: description.trim() }),
+      body: JSON.stringify({ name, description: description.trim() }),
     });
-
     const data = await res.json();
-
-    if (!res.ok) {
-      setError(data.error || "Failed to create flavor");
-      setLoading(false);
-      return;
-    }
-
-    router.push(`/flavors/${data.id}`);
-  }
-
-  function handleClose() {
+    setLoading(false);
+    if (!res.ok) { setError(data.error || "Failed to create flavor"); return; }
     setOpen(false);
-    setRawSlug("");
+    setRawName("");
     setDescription("");
-    setError("");
+    router.refresh();
   }
 
-  const modal = open && mounted ? createPortal(
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-      style={{ backgroundColor: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)" }}
-      onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
+  if (!mounted) return (
+    <button
+      className="px-6 py-3 rounded-xl text-sm font-bold"
+      style={{ background: "linear-gradient(135deg, #f59e0b, #f97316)", color: "#0f172a" }}
     >
-      <div
-        className="w-full max-w-md rounded-2xl animate-fade-up flex flex-col"
-        style={{
-          backgroundColor: "var(--bg-card)",
-          border: "1px solid var(--border-accent)",
-          maxHeight: "90vh",
-          overflow: "hidden",
-        }}
-      >
-        {/* Header */}
-        <div
-          className="px-6 py-5 shrink-0"
-          style={{
-            background: "linear-gradient(135deg, rgba(245,158,11,0.1), rgba(249,115,22,0.05))",
-            borderBottom: "1px solid var(--border-accent)",
-          }}
-        >
-          <p className="text-xs font-mono uppercase tracking-widest mb-1" style={{ color: "var(--accent)" }}>
-            New Flavor
-          </p>
-          <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
-            Create a Humor Flavor
-          </h2>
-          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-            A flavor is a named pipeline of LLM steps.
-          </p>
-        </div>
-
-        {/* Body */}
-        <form onSubmit={handleCreate} className="p-6 space-y-4 overflow-y-auto">
-          <div>
-            <label className="block text-xs font-mono uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>
-              Slug *
-            </label>
-            <input
-              value={rawSlug}
-              onChange={(e) => setRawSlug(e.target.value)}
-              placeholder="e.g. dry-sarcasm"
-              required
-              autoFocus
-              className="w-full px-4 py-3 rounded-xl text-sm font-mono outline-none transition-all"
-              style={{
-                backgroundColor: "var(--bg-base)",
-                border: "1px solid var(--border)",
-                color: "var(--text-primary)",
-              }}
-              onFocus={(e) => { (e.target as HTMLInputElement).style.border = "1px solid var(--border-accent)"; }}
-              onBlur={(e) => { (e.target as HTMLInputElement).style.border = "1px solid var(--border)"; }}
-            />
-            {slug && (
-              <p className="text-xs font-mono mt-1.5" style={{ color: "var(--accent)" }}>
-                → {slug}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-xs font-mono uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>
-              Description
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="What makes this humor flavor unique?"
-              rows={3}
-              className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none transition-all"
-              style={{
-                backgroundColor: "var(--bg-base)",
-                border: "1px solid var(--border)",
-                color: "var(--text-primary)",
-              }}
-              onFocus={(e) => { (e.target as HTMLTextAreaElement).style.border = "1px solid var(--border-accent)"; }}
-              onBlur={(e) => { (e.target as HTMLTextAreaElement).style.border = "1px solid var(--border)"; }}
-            />
-          </div>
-
-          {error && (
-            <div
-              className="rounded-xl px-4 py-3 text-sm"
-              style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "var(--danger)" }}
-            >
-              {error}
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-1">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="flex-1 py-3 rounded-xl text-sm font-mono transition-all hover:opacity-80"
-              style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", backgroundColor: "transparent" }}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading || !slug}
-              className="flex-1 py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ background: "linear-gradient(135deg, #f59e0b, #f97316)", color: "#0f172a" }}
-            >
-              {loading ? "Creating…" : "Create & Open →"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>,
-    document.body
-  ) : null;
+      + New Flavor
+    </button>
+  );
 
   return (
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95"
+        className="px-6 py-3 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95"
         style={{ background: "linear-gradient(135deg, #f59e0b, #f97316)", color: "#0f172a" }}
       >
         + New Flavor
       </button>
-      {modal}
+
+      {open && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) { setOpen(false); setError(""); } }}
+        >
+          <div
+            className="w-full max-w-md rounded-xl p-6 animate-fade-up"
+            style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-accent)" }}
+          >
+            <h2 className="text-lg font-bold mb-5" style={{ color: "var(--text-primary)" }}>
+              New Humor Flavor
+            </h2>
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div>
+                <label className="block text-xs font-mono uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
+                  Name <span className="text-red-400">*</span>
+                </label>
+                <input
+                  value={rawName}
+                  onChange={(e) => setRawName(e.target.value)}
+                  placeholder="My Humor Flavor"
+                  autoFocus
+                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                  style={{ backgroundColor: "var(--bg-base)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-mono uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>
+                  Description <span className="normal-case font-normal">(optional)</span>
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="What kind of humor does this flavor generate?"
+                  rows={3}
+                  className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none"
+                  style={{ backgroundColor: "var(--bg-base)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                />
+              </div>
+
+              {error && <p className="text-sm" style={{ color: "var(--danger)" }}>{error}</p>}
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => { setOpen(false); setError(""); setRawName(""); setDescription(""); }}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-mono"
+                  style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", background: "transparent" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading || !rawName.trim()}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50"
+                  style={{ background: "linear-gradient(135deg, #f59e0b, #f97316)", color: "#0f172a" }}
+                >
+                  {loading ? "Creating…" : "Create Flavor"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
     </>
   );
 }
