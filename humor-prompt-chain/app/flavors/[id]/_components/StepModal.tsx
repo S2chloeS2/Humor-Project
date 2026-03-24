@@ -70,13 +70,15 @@ export default function StepModal({ flavorId, step, nextOrder = 1, onClose, onSa
     setStepTypeId(id);
     if (!isEdit) {
       if (id === 1 || id === 2) {
-        setInputTypeId(1);  // image-and-text
-        setOutputTypeId(1); // string
-        setModelId(6);      // GPT-4o-mini (required for image steps)
+        setInputTypeId(1);   // image-and-text
+        setOutputTypeId(1);  // string
+        setModelId(14);      // Gemini 2.5 Pro (works with humorFlavorId)
+        setTemperature("");  // Gemini doesn't support temperature
       } else {
-        setInputTypeId(2);  // text-only
-        setOutputTypeId(2); // array
-        setModelId(1);      // GPT-4.1
+        setInputTypeId(2);   // text-only
+        setOutputTypeId(2);  // array
+        setModelId(17);      // GPT 5 Mini (works with humorFlavorId)
+        setTemperature("");
       }
     }
   }
