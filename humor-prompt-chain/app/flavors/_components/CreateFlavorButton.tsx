@@ -17,14 +17,14 @@ export default function CreateFlavorButton() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    const name = rawName.trim();
-    if (!name) return;
+    const slug = rawName.trim().toLowerCase().replace(/\s+/g, "-");
+    if (!slug) return;
     setLoading(true);
     setError("");
     const res = await fetch("/api/flavors", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, description: description.trim() }),
+      body: JSON.stringify({ slug, description: description.trim() }),
     });
     const data = await res.json();
     setLoading(false);

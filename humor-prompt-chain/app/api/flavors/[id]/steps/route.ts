@@ -26,10 +26,11 @@ export async function POST(
   const { id: flavorId } = await params;
   const body = await request.json();
 
+  const now = new Date().toISOString();
   const { data, error } = await ctx.admin
     .from("humor_flavor_steps")
     .insert({
-      humor_flavor_id: flavorId,
+      humor_flavor_id: parseInt(flavorId, 10),
       order_by: body.order_by ?? 1,
       description: body.description ?? null,
       humor_flavor_step_type_id: body.humor_flavor_step_type_id ?? null,
@@ -39,6 +40,10 @@ export async function POST(
       llm_system_prompt: body.llm_system_prompt ?? null,
       llm_user_prompt: body.llm_user_prompt ?? null,
       llm_temperature: body.llm_temperature ?? null,
+      created_datetime_utc: now,
+      created_by_user_id: ctx.user.id,
+      modified_by_user_id: ctx.user.id,
+      modified_datetime_utc: now,
     })
     .select()
     .single();

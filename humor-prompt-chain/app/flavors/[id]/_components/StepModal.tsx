@@ -72,9 +72,11 @@ export default function StepModal({ flavorId, step, nextOrder = 1, onClose, onSa
       if (id === 1 || id === 2) {
         setInputTypeId(1);  // image-and-text
         setOutputTypeId(1); // string
+        setModelId(6);      // GPT-4o-mini (required for image steps)
       } else {
         setInputTypeId(2);  // text-only
-        setOutputTypeId(1); // string
+        setOutputTypeId(2); // array
+        setModelId(1);      // GPT-4.1
       }
     }
   }

@@ -26,8 +26,10 @@ export async function PATCH(
   const { id } = await params;
   const body = await request.json();
   const update: Record<string, any> = {};
-  if (body.name !== undefined) update.name = body.name;
+  if (body.slug !== undefined) update.slug = body.slug;
   if (body.description !== undefined) update.description = body.description || null;
+  update.modified_by_user_id = ctx.user.id;
+  update.modified_datetime_utc = new Date().toISOString();
 
   const { data, error } = await ctx.admin
     .from("humor_flavors")

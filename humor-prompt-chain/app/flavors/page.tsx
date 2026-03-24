@@ -30,8 +30,8 @@ export default async function FlavorsPage() {
 
   const { data: flavors } = await admin
     .from("humor_flavors")
-    .select("id, name, description, created_datetime_utc")
-    .order("name");
+    .select("id, slug, description, created_datetime_utc")
+    .order("slug");
 
   // Fetch steps separately to avoid FK join issues
   const { data: allSteps } = await admin
@@ -109,7 +109,7 @@ export default async function FlavorsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-2">
                         <h2 className="text-2xl font-black font-mono leading-none" style={{ color: "var(--accent)" }}>
-                          {f.name}
+                          {f.slug}
                         </h2>
                         <span
                           className="text-xs font-mono px-2.5 py-1 rounded-full font-semibold"
@@ -142,7 +142,7 @@ export default async function FlavorsPage() {
                       >
                         Open Studio →
                       </Link>
-                      <DeleteFlavorButton id={f.id} slug={f.name} />
+                      <DeleteFlavorButton id={f.id} slug={f.slug} />
                     </div>
                   </div>
                 </div>

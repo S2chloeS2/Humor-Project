@@ -24,9 +24,7 @@ export async function POST(request: Request) {
   if (!imageUrl) return NextResponse.json({ error: "imageUrl is required" }, { status: 400 });
   if (!flavorId) return NextResponse.json({ error: "flavorId is required" }, { status: 400 });
 
-  // Parse flavorId as integer (API requires numeric ID, not string)
   const humorFlavorId = flavorId;
-  // humorFlavorId is now a UUID string
   if (!humorFlavorId) {
     return NextResponse.json({ error: "Invalid flavorId" }, { status: 400 });
   }

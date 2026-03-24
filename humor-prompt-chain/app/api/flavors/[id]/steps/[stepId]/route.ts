@@ -36,6 +36,8 @@ export async function PATCH(
   if (body.llm_user_prompt !== undefined) update.llm_user_prompt = body.llm_user_prompt;
   if (body.llm_temperature !== undefined) update.llm_temperature = body.llm_temperature;
   if (body.order_by !== undefined) update.order_by = body.order_by;
+  update.modified_by_user_id = ctx.user.id;
+  update.modified_datetime_utc = new Date().toISOString();
 
   const { data, error } = await ctx.admin
     .from("humor_flavor_steps")
