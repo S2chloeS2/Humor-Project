@@ -30,8 +30,14 @@ export default async function FlavorsPage() {
 
   const { data: flavors } = await admin
     .from("humor_flavors")
-    .select("id, name, description, created_datetime_utc, humor_flavor_steps(id, description, order_by)")
+    .select("id, name, description, created_datetime_utc")
     .order("name");
+
+  // Fetch steps separately to avoid FK join issues
+  const { data: allSteps } = await admin
+    .from("humor_flavor_steps")
+    .select("id, description, order_by, humor_flavor_id")
+    .order("order_by");
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--bg-base)" }}>
@@ -75,9 +81,9 @@ export default async function FlavorsPage() {
         {/* Flavor grid */}
         <div className="flex flex-col gap-5">
           {flavors?.map((f: any, fi: number) => {
-            const steps = [...(f.humor_flavor_steps ?? [])].sort(
-              (a: any, b: any) => a.order_by - b.order_by
-            );
+            const steps = [...(allSteps ?? [])].filter(
+              (s: any) => String(s.humor_flavor_id) === String(f.id)
+            ).sort((a: any, b: any) => a.order_by - b.order_by);
             const preview = steps.slice(0, 5);
             const extra = steps.length - preview.length;
 

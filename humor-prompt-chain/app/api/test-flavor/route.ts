@@ -25,8 +25,9 @@ export async function POST(request: Request) {
   if (!flavorId) return NextResponse.json({ error: "flavorId is required" }, { status: 400 });
 
   // Parse flavorId as integer (API requires numeric ID, not string)
-  const humorFlavorId = parseInt(String(flavorId), 10);
-  if (isNaN(humorFlavorId)) {
+  const humorFlavorId = flavorId;
+  // humorFlavorId is now a UUID string
+  if (!humorFlavorId) {
     return NextResponse.json({ error: "Invalid flavorId" }, { status: 400 });
   }
 

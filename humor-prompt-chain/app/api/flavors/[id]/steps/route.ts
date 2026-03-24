@@ -29,7 +29,7 @@ export async function POST(
   const { data, error } = await ctx.admin
     .from("humor_flavor_steps")
     .insert({
-      humor_flavor_id: parseInt(flavorId, 10),
+      humor_flavor_id: flavorId,
       order_by: body.order_by ?? 1,
       description: body.description ?? null,
       humor_flavor_step_type_id: body.humor_flavor_step_type_id ?? null,
