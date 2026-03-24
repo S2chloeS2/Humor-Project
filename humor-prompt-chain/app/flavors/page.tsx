@@ -273,7 +273,7 @@ export default async function FlavorsPage({
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 mt-8">
             <Link
-              href={`/flavors?page=${page - 1}`}
+              href={`/flavors?page=${page - 1}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
               className={`px-4 py-2 rounded-lg text-sm font-mono transition-all ${page <= 1 ? "pointer-events-none opacity-30" : "hover:opacity-80"}`}
               style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", background: "var(--bg-card)" }}
             >
@@ -283,7 +283,7 @@ export default async function FlavorsPage({
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
               <Link
                 key={p}
-                href={`/flavors?page=${p}`}
+                href={`/flavors?page=${p}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
                 className="w-9 h-9 rounded-lg text-sm font-mono flex items-center justify-center transition-all hover:opacity-80"
                 style={{
                   background: p === page ? "linear-gradient(135deg, #f59e0b, #f97316)" : "var(--bg-card)",
@@ -297,7 +297,7 @@ export default async function FlavorsPage({
             ))}
 
             <Link
-              href={`/flavors?page=${page + 1}`}
+              href={`/flavors?page=${page + 1}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
               className={`px-4 py-2 rounded-lg text-sm font-mono transition-all ${page >= totalPages ? "pointer-events-none opacity-30" : "hover:opacity-80"}`}
               style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", background: "var(--bg-card)" }}
             >
