@@ -8,8 +8,23 @@ const OPTIONS = [
   { value: "system" as const, label: "Auto",  icon: "⬡" },
 ];
 
-export default function ThemeToggle() {
+export default function ThemeToggle({ compact }: { compact?: boolean }) {
   const { theme, setTheme } = useTheme();
+
+  if (compact) {
+    const current = OPTIONS.find((o) => o.value === theme) ?? OPTIONS[0];
+    const next = OPTIONS[(OPTIONS.indexOf(current) + 1) % OPTIONS.length];
+    return (
+      <button
+        onClick={() => setTheme(next.value)}
+        title={`Switch to ${next.label}`}
+        className="w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-all hover:opacity-80"
+        style={{ border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text-muted)" }}
+      >
+        {current.icon}
+      </button>
+    );
+  }
 
   return (
     <div

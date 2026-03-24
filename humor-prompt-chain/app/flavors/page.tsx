@@ -1,9 +1,12 @@
+"use server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import CreateFlavorButton from "./_components/CreateFlavorButton";
 import DeleteFlavorButton from "./_components/DeleteFlavorButton";
+
+const PAGE_SIZE = 8;
 
 function stepIcon(desc: string | null): string {
   const d = (desc ?? "").toLowerCase();
@@ -15,7 +18,14 @@ function stepIcon(desc: string | null): string {
   return "⚙️";
 }
 
-export default async function FlavorsPage() {
+export default async function FlavorsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; q?: string }>;
+}) {
+  const { page: pageParam, q = "" } = await searchParams;
+  const page = Math.max(1, parseInt(pageParam ?? "1", 10));
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -28,16 +38,30 @@ export default async function FlavorsPage() {
     .single();
   if (!profile?.is_superadmin && !profile?.is_matrix_admin) redirect("/login?error=unauthorized");
 
-  const { data: flavors } = await admin
-    .from("humor_flavors")
-    .select("id, slug, description, created_datetime_utc")
-    .order("slug");
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
 
-  // Fetch steps separately to avoid FK join issues
-  const { data: allSteps } = await admin
-    .from("humor_flavor_steps")
-    .select("id, description, order_by, humor_flavor_id")
-    .order("order_by");
+  const query = admin
+    .from("humor_flavors")
+    .select("id, slug, description, created_datetime_utc", { count: "exact" })
+    .order("slug")
+    .range(from, to);
+
+  const { data: flavors, count } = q
+    ? await query.ilike("slug", `%${q}%`)
+    : await query;
+
+  const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE);
+
+  // Fetch steps for current page flavors only
+  const flavorIds = (flavors ?? []).map((f: any) => f.id);
+  const { data: allSteps } = flavorIds.length > 0
+    ? await admin
+        .from("humor_flavor_steps")
+        .select("id, description, order_by, humor_flavor_id")
+        .in("humor_flavor_id", flavorIds)
+        .order("order_by")
+    : { data: [] };
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--bg-base)" }}>
@@ -61,6 +85,47 @@ export default async function FlavorsPage() {
           </div>
           <CreateFlavorButton />
         </div>
+
+        {/* Search bar */}
+        <form method="GET" action="/flavors" className="mb-8">
+          <div className="flex gap-3">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: "var(--text-muted)" }}>⌕</span>
+              <input
+                name="q"
+                defaultValue={q}
+                placeholder="Search flavors..."
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none transition-all"
+                style={{
+                  backgroundColor: "var(--bg-card)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-primary)",
+                }}
+              />
+            </div>
+            <button
+              type="submit"
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+              style={{ background: "linear-gradient(135deg, #f59e0b, #f97316)", color: "#0f172a" }}
+            >
+              Search
+            </button>
+            {q && (
+              <Link
+                href="/flavors"
+                className="px-4 py-2.5 rounded-xl text-sm font-mono flex items-center transition-all hover:opacity-80"
+                style={{ border: "1px solid var(--border)", color: "var(--text-muted)", background: "var(--bg-card)" }}
+              >
+                ✕ Clear
+              </Link>
+            )}
+          </div>
+          {q && (
+            <p className="text-xs mt-2 font-mono" style={{ color: "var(--text-muted)" }}>
+              Results for "{q}" · {count ?? 0} found
+            </p>
+          )}
+        </form>
 
         {/* Empty state */}
         {!flavors?.length && (
@@ -204,6 +269,50 @@ export default async function FlavorsPage() {
             );
           })}
         </div>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-8">
+            <Link
+              href={`/flavors?page=${page - 1}`}
+              className={`px-4 py-2 rounded-lg text-sm font-mono transition-all ${page <= 1 ? "pointer-events-none opacity-30" : "hover:opacity-80"}`}
+              style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", background: "var(--bg-card)" }}
+            >
+              ← Prev
+            </Link>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <Link
+                key={p}
+                href={`/flavors?page=${p}`}
+                className="w-9 h-9 rounded-lg text-sm font-mono flex items-center justify-center transition-all hover:opacity-80"
+                style={{
+                  background: p === page ? "linear-gradient(135deg, #f59e0b, #f97316)" : "var(--bg-card)",
+                  color: p === page ? "#0f172a" : "var(--text-secondary)",
+                  border: "1px solid var(--border)",
+                  fontWeight: p === page ? "700" : "400",
+                }}
+              >
+                {p}
+              </Link>
+            ))}
+
+            <Link
+              href={`/flavors?page=${page + 1}`}
+              className={`px-4 py-2 rounded-lg text-sm font-mono transition-all ${page >= totalPages ? "pointer-events-none opacity-30" : "hover:opacity-80"}`}
+              style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", background: "var(--bg-card)" }}
+            >
+              Next →
+            </Link>
+          </div>
+        )}
+
+        {/* Page info */}
+        {totalPages > 1 && (
+          <p className="text-center text-xs font-mono mt-3" style={{ color: "var(--text-muted)" }}>
+            Page {page} of {totalPages} · {count} flavors total
+          </p>
+        )}
+
       </main>
     </div>
   );

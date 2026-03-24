@@ -41,21 +41,20 @@ export default function Sidebar() {
       }}
     >
       {/* Logo */}
-      <div className="px-5 py-5" style={{ borderBottom: "1px solid var(--border-accent)" }}>
-        <div className="flex items-center gap-2">
-          <div
-            className="w-6 h-6 rounded flex items-center justify-center text-xs"
-            style={{ background: "linear-gradient(135deg, #f59e0b, #f97316)" }}
-          >
-            ⛓
+      <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--border-accent)" }}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div
+              className="w-6 h-6 rounded flex items-center justify-center text-xs"
+              style={{ background: "linear-gradient(135deg, #f59e0b, #f97316)" }}
+            >
+              ⛓
+            </div>
+            <span className="font-bold font-mono text-xs tracking-widest shimmer-text">
+              PROMPT CHAIN
+            </span>
           </div>
-          <span className="font-bold font-mono text-xs tracking-widest shimmer-text">
-            PROMPT CHAIN
-          </span>
-        </div>
-        <div className="mt-1 flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 rounded-full bg-green-400" style={{ boxShadow: "0 0 6px rgba(74,222,128,0.8)" }} />
-          <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>live</span>
+          <ThemeToggle compact />
         </div>
       </div>
 
@@ -104,14 +103,8 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Theme + User / Logout */}
+      {/* User / Logout */}
       <div className="px-3 py-4 space-y-3" style={{ borderTop: "1px solid var(--border-accent)" }}>
-        {/* Theme toggle */}
-        <div className="px-1">
-          <p className="text-xs font-mono mb-1.5" style={{ color: "var(--text-muted)" }}>Theme</p>
-          <ThemeToggle />
-        </div>
-
         {/* User card */}
         <div
           className="px-3 py-2 rounded-lg"
