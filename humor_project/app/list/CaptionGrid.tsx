@@ -119,7 +119,7 @@ export default function CaptionGrid() {
     } else if (previousVote !== undefined) {
       ({ error } = await supabase
         .from("caption_votes")
-        .update({ vote_value: vote, modified_datetime_utc: new Date().toISOString() })
+        .update({ vote_value: vote, modified_datetime_utc: new Date().toISOString(), modified_by_user_id: userId })
         .eq("profile_id", userId)
         .eq("caption_id", captionId));
     } else {
@@ -132,6 +132,8 @@ export default function CaptionGrid() {
           vote_value: vote,
           created_datetime_utc: now,
           modified_datetime_utc: now,
+          created_by_user_id: userId,
+          modified_by_user_id: userId,
         }));
     }
 
