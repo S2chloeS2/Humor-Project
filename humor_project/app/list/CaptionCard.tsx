@@ -146,13 +146,19 @@ export default function CaptionCard({
           <span
             style={{
               fontFamily: "monospace",
-              fontSize: 10,
-              letterSpacing: "0.12em",
-              color: "#3a3a3a",
-              textTransform: "uppercase",
+              fontSize: 11,
+              letterSpacing: "0.1em",
+              color: likes > 0 ? "#f5c518" : "#6b6b6b",
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
             }}
           >
-            ★ {likes}
+            <span style={{ fontSize: 13 }}>★</span>
+            <span style={{ fontWeight: 700 }}>{likes}</span>
+            <span style={{ fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", opacity: 0.7 }}>
+              votes
+            </span>
           </span>
 
           {/* Copy button */}
@@ -183,11 +189,12 @@ export default function CaptionCard({
             <div style={{ display: "flex", gap: 4 }}>
               <motion.button
                 whileTap={{ scale: 0.88 }}
+                whileHover={userVote !== 1 ? { borderColor: "#f5c518", color: "#f5c518" } : {}}
                 onClick={(e) => { e.stopPropagation(); onVote(captionId, 1); }}
                 style={{
                   background: userVote === 1 ? "#f5c518" : "transparent",
-                  color: userVote === 1 ? "#0c0c0c" : "#3a3a3a",
-                  border: `1px solid ${userVote === 1 ? "#f5c518" : "#2a2a2a"}`,
+                  color: userVote === 1 ? "#0c0c0c" : "#8a8a8a",
+                  border: `1px solid ${userVote === 1 ? "#f5c518" : "#4a4a4a"}`,
                   borderRadius: 2,
                   padding: "4px 10px",
                   cursor: "pointer",
@@ -201,11 +208,12 @@ export default function CaptionCard({
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.88 }}
+                whileHover={userVote !== -1 ? { borderColor: "#c0392b", color: "#c0392b" } : {}}
                 onClick={(e) => { e.stopPropagation(); onVote(captionId, -1); }}
                 style={{
                   background: userVote === -1 ? "#c0392b" : "transparent",
-                  color: userVote === -1 ? "#fff" : "#3a3a3a",
-                  border: `1px solid ${userVote === -1 ? "#c0392b" : "#2a2a2a"}`,
+                  color: userVote === -1 ? "#fff" : "#8a8a8a",
+                  border: `1px solid ${userVote === -1 ? "#c0392b" : "#4a4a4a"}`,
                   borderRadius: 2,
                   padding: "4px 10px",
                   cursor: "pointer",
