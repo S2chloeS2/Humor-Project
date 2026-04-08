@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -44,6 +45,7 @@ export default function UploadForm() {
   const [step, setStep]                         = useState<Step | null>(null);
   const [captions, setCaptions]                 = useState<GeneratedCaption[] | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [copiedId, setCopiedId]                 = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
@@ -103,7 +105,15 @@ export default function UploadForm() {
     setCaptions(null);
     setUploadedImageUrl(null);
     setStep(null);
+    setCopiedId(null);
     if (inputRef.current) inputRef.current.value = "";
+  }
+
+  function handleCaptionCopy(text: string, index: number) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedId(index);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
   }
 
   async function handleUpload() {
@@ -463,24 +473,55 @@ export default function UploadForm() {
                   Generated Captions
                 </span>
               </div>
-              <motion.button
-                onClick={handleReset}
-                whileHover={{ borderColor: "#3a3a3a", color: "#9ca3af" }}
-                style={{
-                  background: "transparent",
-                  border: "1px solid #2a2a2a",
-                  borderRadius: 2,
-                  color: "#3a3a3a",
-                  fontFamily: "monospace",
-                  fontSize: 9,
-                  letterSpacing: "0.16em",
-                  textTransform: "uppercase",
-                  padding: "6px 14px",
-                  cursor: "pointer",
-                }}
-              >
-                Upload another
-              </motion.button>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Link
+                  href="/list"
+                  style={{
+                    fontFamily: "monospace",
+                    fontSize: 9,
+                    letterSpacing: "0.16em",
+                    textTransform: "uppercase",
+                    color: "#f5c518",
+                    textDecoration: "none",
+                    border: "1px solid #f5c518",
+                    borderRadius: 2,
+                    padding: "6px 14px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    transition: "background 0.15s, color 0.15s",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLAnchorElement).style.background = "#f5c518";
+                    (e.currentTarget as HTMLAnchorElement).style.color = "#0c0c0c";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
+                    (e.currentTarget as HTMLAnchorElement).style.color = "#f5c518";
+                  }}
+                >
+                  Browse Feed
+                  <span style={{ fontSize: 11, fontWeight: 400 }}>↗</span>
+                </Link>
+                <motion.button
+                  onClick={handleReset}
+                  whileHover={{ borderColor: "#3a3a3a", color: "#9ca3af" }}
+                  style={{
+                    background: "transparent",
+                    border: "1px solid #2a2a2a",
+                    borderRadius: 2,
+                    color: "#3a3a3a",
+                    fontFamily: "monospace",
+                    fontSize: 9,
+                    letterSpacing: "0.16em",
+                    textTransform: "uppercase",
+                    padding: "6px 14px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Upload another
+                </motion.button>
+              </div>
             </div>
 
             {/* Uploaded image thumbnail */}
@@ -533,24 +574,46 @@ export default function UploadForm() {
                     border: "1px solid #1c1c1c",
                     borderRadius: 2,
                     padding: "16px 18px",
-                    position: "relative",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 12,
                   }}
                 >
-                  {/* Caption number */}
-                  <span
-                    style={{
-                      position: "absolute",
-                      top: 12,
-                      right: 14,
-                      fontFamily: "monospace",
-                      fontSize: 9,
-                      letterSpacing: "0.1em",
-                      color: "#2a2a2a",
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
+                  {/* Card header: number + copy button */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span
+                      style={{
+                        fontFamily: "monospace",
+                        fontSize: 9,
+                        letterSpacing: "0.1em",
+                        color: "#2a2a2a",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <motion.button
+                      onClick={() => handleCaptionCopy(caption.content, i)}
+                      whileHover={{ borderColor: "#f5c518", color: "#f5c518" }}
+                      whileTap={{ scale: 0.9 }}
+                      transition={{ duration: 0.15 }}
+                      style={{
+                        background: "transparent",
+                        border: `1px solid ${copiedId === i ? "#f5c518" : "#2a2a2a"}`,
+                        borderRadius: 2,
+                        color: copiedId === i ? "#f5c518" : "#3a3a3a",
+                        fontFamily: "monospace",
+                        fontSize: 9,
+                        letterSpacing: "0.16em",
+                        textTransform: "uppercase",
+                        padding: "4px 10px",
+                        cursor: "pointer",
+                        transition: "border-color 0.15s, color 0.15s",
+                      }}
+                    >
+                      {copiedId === i ? "Copied!" : "Copy"}
+                    </motion.button>
+                  </div>
                   <p
                     style={{
                       color: "#c8c4bc",
@@ -558,7 +621,6 @@ export default function UploadForm() {
                       lineHeight: 1.65,
                       margin: 0,
                       fontStyle: "italic",
-                      paddingRight: 28,
                     }}
                   >
                     "{caption.content}"
