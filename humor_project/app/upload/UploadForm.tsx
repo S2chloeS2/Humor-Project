@@ -204,10 +204,10 @@ export default function UploadForm() {
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         animate={{
-          borderColor: file ? "#f5c518" : "#2a2a2a",
+          borderColor: file ? "#f5c518" : "#5a5a5a",
           background: file ? "rgba(245,197,24,0.03)" : "#111",
         }}
-        whileHover={{ borderColor: file ? "#f5c518" : "#3a3a3a" }}
+        whileHover={{ borderColor: file ? "#f5c518" : "#8a8a8a" }}
         transition={{ duration: 0.2 }}
         style={{
           border: "1px dashed",
@@ -275,21 +275,21 @@ export default function UploadForm() {
             >
               <svg
                 width={36} height={36} viewBox="0 0 24 24"
-                fill="none" stroke="#2a2a2a" strokeWidth={1.5}
+                fill="none" stroke="#5a5a5a" strokeWidth={1.5}
                 strokeLinecap="round" strokeLinejoin="round"
               >
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="17 8 12 3 7 8" />
                 <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
-              <p style={{ color: "#3a3a3a", fontSize: 13, margin: 0 }}>
+              <p style={{ color: "#8a8a8a", fontSize: 13, margin: 0 }}>
                 Drag &amp; drop or{" "}
                 <span style={{ color: "#f5c518", textDecoration: "underline" }}>browse</span>
               </p>
               <p
                 style={{
                   fontFamily: "monospace",
-                  color: "#2a2a2a",
+                  color: "#5a5a5a",
                   fontSize: 10,
                   letterSpacing: "0.16em",
                   textTransform: "uppercase",
@@ -375,15 +375,15 @@ export default function UploadForm() {
           <motion.button
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
-            whileHover={{ borderColor: "#3a3a3a", color: "#9ca3af" }}
+            whileHover={{ borderColor: "#8a8a8a", color: "#9ca3af" }}
             onClick={handleRemove}
             style={{
               flex: "0 0 auto",
               padding: "12px 20px",
               borderRadius: 2,
-              border: "1px solid #2a2a2a",
+              border: "1px solid #5a5a5a",
               background: "transparent",
-              color: "#3a3a3a",
+              color: "#8a8a8a",
               fontSize: 11,
               fontFamily: "monospace",
               letterSpacing: "0.1em",
@@ -407,7 +407,7 @@ export default function UploadForm() {
             borderRadius: 2,
             border: "none",
             background: !file || loading ? "#1a1a1a" : "#f5c518",
-            color: !file || loading ? "#2a2a2a" : "#0c0c0c",
+            color: !file || loading ? "#5a5a5a" : "#0c0c0c",
             fontSize: 11,
             fontWeight: 700,
             fontFamily: "monospace",
@@ -505,12 +505,12 @@ export default function UploadForm() {
                 </Link>
                 <motion.button
                   onClick={handleReset}
-                  whileHover={{ borderColor: "#3a3a3a", color: "#9ca3af" }}
+                  whileHover={{ borderColor: "#8a8a8a", color: "#9ca3af" }}
                   style={{
                     background: "transparent",
-                    border: "1px solid #2a2a2a",
+                    border: "1px solid #5a5a5a",
                     borderRadius: 2,
-                    color: "#3a3a3a",
+                    color: "#8a8a8a",
                     fontFamily: "monospace",
                     fontSize: 9,
                     letterSpacing: "0.16em",
@@ -555,7 +555,7 @@ export default function UploadForm() {
               <p
                 style={{
                   fontFamily: "monospace",
-                  color: "#3a3a3a",
+                  color: "#8a8a8a",
                   fontSize: 11,
                   letterSpacing: "0.1em",
                 }}
@@ -586,7 +586,7 @@ export default function UploadForm() {
                         fontFamily: "monospace",
                         fontSize: 9,
                         letterSpacing: "0.1em",
-                        color: "#2a2a2a",
+                        color: "#5a5a5a",
                         textTransform: "uppercase",
                       }}
                     >
@@ -599,9 +599,9 @@ export default function UploadForm() {
                       transition={{ duration: 0.15 }}
                       style={{
                         background: "transparent",
-                        border: `1px solid ${copiedId === i ? "#f5c518" : "#2a2a2a"}`,
+                        border: `1px solid ${copiedId === i ? "#f5c518" : "#5a5a5a"}`,
                         borderRadius: 2,
-                        color: copiedId === i ? "#f5c518" : "#3a3a3a",
+                        color: copiedId === i ? "#f5c518" : "#8a8a8a",
                         fontFamily: "monospace",
                         fontSize: 9,
                         letterSpacing: "0.16em",

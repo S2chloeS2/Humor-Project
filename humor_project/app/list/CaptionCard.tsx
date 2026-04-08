@@ -113,7 +113,7 @@ export default function CaptionCard({
             alignItems: "center",
             justifyContent: "center",
             background: "#0e0e0e",
-            color: "#2a2a2a",
+            color: "#5a5a5a",
             fontSize: 11,
             letterSpacing: "0.2em",
             textTransform: "uppercase",
@@ -169,9 +169,9 @@ export default function CaptionCard({
             transition={{ duration: 0.15 }}
             style={{
               background: "transparent",
-              border: `1px solid ${copied ? "#f5c518" : "#2a2a2a"}`,
+              border: `1px solid ${copied ? "#f5c518" : "#5a5a5a"}`,
               borderRadius: 2,
-              color: copied ? "#f5c518" : "#3a3a3a",
+              color: copied ? "#f5c518" : "#8a8a8a",
               fontFamily: "monospace",
               fontSize: 9,
               letterSpacing: "0.16em",

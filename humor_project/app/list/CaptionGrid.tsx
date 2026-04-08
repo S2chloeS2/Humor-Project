@@ -230,7 +230,7 @@ export default function CaptionGrid() {
             style={{
               fontFamily: "monospace",
               fontSize: 11,
-              color: "#3a3a3a",
+              color: "#8a8a8a",
               margin: 0,
               letterSpacing: "0.12em",
               textTransform: "uppercase",
@@ -241,7 +241,7 @@ export default function CaptionGrid() {
         </div>
 
         {/* ── Sort toggle ──────────────────────────────────────────────────── */}
-        <div style={{ display: "flex", border: "1px solid #2a2a2a", borderRadius: 2 }}>
+        <div style={{ display: "flex", border: "1px solid #5a5a5a", borderRadius: 2 }}>
           {(["newest", "top"] as const).map((mode) => (
             <motion.button
               key={mode}
@@ -252,7 +252,7 @@ export default function CaptionGrid() {
               style={{
                 padding: "7px 16px",
                 background: sortBy === mode ? "#f5c518" : "transparent",
-                color: sortBy === mode ? "#0c0c0c" : "#3a3a3a",
+                color: sortBy === mode ? "#0c0c0c" : "#8a8a8a",
                 border: "none",
                 borderRadius: 2,
                 fontFamily: "monospace",
@@ -304,9 +304,9 @@ export default function CaptionGrid() {
             style={{
               padding: "12px 40px",
               borderRadius: 2,
-              border: "1px solid #2a2a2a",
+              border: "1px solid #5a5a5a",
               background: "transparent",
-              color: loading ? "#2a2a2a" : "#3a3a3a",
+              color: loading ? "#5a5a5a" : "#8a8a8a",
               fontSize: 10,
               fontFamily: "monospace",
               letterSpacing: "0.2em",
@@ -330,7 +330,7 @@ export default function CaptionGrid() {
                 fontFamily: "monospace",
                 fontSize: 9,
                 letterSpacing: "0.24em",
-                color: "#2a2a2a",
+                color: "#5a5a5a",
                 textTransform: "uppercase",
                 flexShrink: 0,
               }}
