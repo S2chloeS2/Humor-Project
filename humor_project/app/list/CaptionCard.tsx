@@ -113,7 +113,7 @@ export default function CaptionCard({
             alignItems: "center",
             justifyContent: "center",
             background: "#0e0e0e",
-            color: "#5a5a5a",
+            color: "#6a6a6a",
             fontSize: 11,
             letterSpacing: "0.2em",
             textTransform: "uppercase",
@@ -169,9 +169,9 @@ export default function CaptionCard({
             transition={{ duration: 0.15 }}
             style={{
               background: "transparent",
-              border: `1px solid ${copied ? "#f5c518" : "#5a5a5a"}`,
+              border: `1px solid ${copied ? "#f5c518" : "#6a6a6a"}`,
               borderRadius: 2,
-              color: copied ? "#f5c518" : "#8a8a8a",
+              color: copied ? "#f5c518" : "#c8c4bc",
               fontFamily: "monospace",
               fontSize: 9,
               letterSpacing: "0.16em",
@@ -193,7 +193,7 @@ export default function CaptionCard({
                 onClick={(e) => { e.stopPropagation(); onVote(captionId, 1); }}
                 style={{
                   background: userVote === 1 ? "#f5c518" : "transparent",
-                  color: userVote === 1 ? "#0c0c0c" : "#8a8a8a",
+                  color: userVote === 1 ? "#0c0c0c" : "#c8c4bc",
                   border: `1px solid ${userVote === 1 ? "#f5c518" : "#4a4a4a"}`,
                   borderRadius: 2,
                   padding: "4px 10px",
@@ -212,7 +212,7 @@ export default function CaptionCard({
                 onClick={(e) => { e.stopPropagation(); onVote(captionId, -1); }}
                 style={{
                   background: userVote === -1 ? "#c0392b" : "transparent",
-                  color: userVote === -1 ? "#fff" : "#8a8a8a",
+                  color: userVote === -1 ? "#fff" : "#c8c4bc",
                   border: `1px solid ${userVote === -1 ? "#c0392b" : "#4a4a4a"}`,
                   borderRadius: 2,
                   padding: "4px 10px",

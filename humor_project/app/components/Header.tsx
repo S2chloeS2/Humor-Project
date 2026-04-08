@@ -56,16 +56,16 @@ export default function Header({ email: initialEmail }: { email: string | null }
 
       {/* Nav */}
       <nav style={{ display: "flex", alignItems: "center", gap: 4 }}>
-        <Link href="/list" style={{ fontSize: 12, color: "#555", textDecoration: "none", padding: "6px 12px", letterSpacing: "0.1em", textTransform: "uppercase", transition: "color 0.15s" }}>
+        <Link href="/list" style={{ fontSize: 12, color: "#c8c4bc", textDecoration: "none", padding: "6px 12px", letterSpacing: "0.1em", textTransform: "uppercase", transition: "color 0.15s" }}>
           Browse
         </Link>
         {email ? (
           <>
-            <Link href="/upload" style={{ fontSize: 12, color: "#555", textDecoration: "none", padding: "6px 12px", letterSpacing: "0.1em", textTransform: "uppercase", transition: "color 0.15s" }}>
+            <Link href="/upload" style={{ fontSize: 12, color: "#c8c4bc", textDecoration: "none", padding: "6px 12px", letterSpacing: "0.1em", textTransform: "uppercase", transition: "color 0.15s" }}>
               Upload
             </Link>
-            <span style={{ width: 1, height: 16, background: "#2a2a2a", margin: "0 4px" }} />
-            <span style={{ fontSize: 11, color: "#3a3a3a", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <span style={{ width: 1, height: 16, background: "#5a5a5a", margin: "0 4px" }} />
+            <span style={{ fontSize: 11, color: "#9a9a9a", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {email}
             </span>
             <SignOutButton />

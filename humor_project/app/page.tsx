@@ -151,7 +151,7 @@ export default function Home() {
           style={{ display: "flex", alignItems: "center", gap: 20, margin: "48px 0", width: "100%", maxWidth: 600 }}
         >
           <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, transparent, #2a2a2a)" }} />
-          <span style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: "0.22em", color: "#3a3a3a", textTransform: "uppercase", flexShrink: 0 }}>
+          <span style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: "0.22em", color: "#9a9a9a", textTransform: "uppercase", flexShrink: 0 }}>
             Community Voted · AI Generated
           </span>
           <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, #2a2a2a, transparent)" }} />
@@ -160,7 +160,7 @@ export default function Home() {
         {/* Subheading */}
         <motion.p
           {...fadeUp(5)}
-          style={{ fontSize: 15, color: "#555", lineHeight: 1.8, maxWidth: 380, marginBottom: 52, letterSpacing: "0.02em" }}
+          style={{ fontSize: 15, color: "#c8c4bc", lineHeight: 1.8, maxWidth: 380, marginBottom: 52, letterSpacing: "0.02em" }}
         >
           Upload any photo. Watch AI write the captions.
           <br />
@@ -197,8 +197,8 @@ export default function Home() {
               gap: 12,
               padding: "15px 32px",
               background: "transparent",
-              border: "1px solid #2a2a2a",
-              color: "#555",
+              border: "1px solid #6a6a6a",
+              color: "#c8c4bc",
               fontWeight: 500,
               fontSize: 12,
               letterSpacing: "0.12em",
@@ -218,7 +218,7 @@ export default function Home() {
           transition={{ delay: 1.2, duration: 1 }}
           style={{ position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}
         >
-          <span style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: "0.2em", color: "#2a2a2a", textTransform: "uppercase" }}>Scroll</span>
+          <span style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: "0.2em", color: "#9a9a9a", textTransform: "uppercase" }}>Scroll</span>
           <motion.div
             animate={{ y: [0, 8, 0] }}
             transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
