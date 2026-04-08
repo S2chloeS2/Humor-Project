@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 
 export default function CaptionCard({
@@ -20,6 +20,7 @@ export default function CaptionCard({
   userVote: number | null;
   onVote: (captionId: string, vote: number) => void;
 }) {
+  const [copied, setCopied] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -39,6 +40,14 @@ export default function CaptionCard({
   function handleMouseLeave() {
     mouseX.set(0);
     mouseY.set(0);
+  }
+
+  function handleCopy(e: React.MouseEvent) {
+    e.stopPropagation();
+    navigator.clipboard.writeText(content).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   }
 
   return (
