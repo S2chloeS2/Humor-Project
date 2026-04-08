@@ -14,12 +14,15 @@ export default function CaptionGrid() {
   const [userId, setUserId] = useState<string | null>(null);
   const [userVotes, setUserVotes] = useState<Record<string, number>>({});
   const [sortBy, setSortBy] = useState<"newest" | "top">("newest");
+  const [filterBy, setFilterBy] = useState<"all" | "liked">("all");
   const [hasMore, setHasMore] = useState(true);
 
   const supabase = createClient();
   // Ref to track the current sort inside the async loadMore closure
   const sortByRef = useRef(sortBy);
   sortByRef.current = sortBy;
+  const filterByRef = useRef(filterBy);
+  filterByRef.current = filterBy;
 
   useEffect(() => {
     async function init() {
@@ -43,14 +46,14 @@ export default function CaptionGrid() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-fetch from scratch whenever sortBy changes
+  // Re-fetch from scratch whenever sortBy or filterBy changes
   useEffect(() => {
     setCaptions([]);
     setPage(0);
     setHasMore(true);
     loadMore(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortBy]);
+  }, [sortBy, filterBy]);
 
   async function loadMore(overridePage?: number) {
     if (loading) return;
@@ -58,8 +61,9 @@ export default function CaptionGrid() {
 
     const currentPage = overridePage ?? page;
     const currentSort = sortByRef.current;
+    const currentFilter = filterByRef.current;
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("captions")
       .select(`
         id,
@@ -71,7 +75,13 @@ export default function CaptionGrid() {
       `)
       .eq("is_public", true)
       .not("content", "is", null)
-      .neq("content", "")
+      .neq("content", "");
+
+    if (currentFilter === "liked") {
+      query = query.gt("like_count", 0);
+    }
+
+    const { data, error } = await query
       .order(currentSort === "top" ? "like_count" : "created_datetime_utc", { ascending: false })
       .range(currentPage * PAGE_SIZE, currentPage * PAGE_SIZE + PAGE_SIZE - 1);
 
@@ -240,33 +250,65 @@ export default function CaptionGrid() {
           </p>
         </div>
 
-        {/* ── Sort toggle ──────────────────────────────────────────────────── */}
-        <div style={{ display: "flex", border: "1px solid #6a6a6a", borderRadius: 2 }}>
-          {(["newest", "top"] as const).map((mode) => (
-            <motion.button
-              key={mode}
-              onClick={() => setSortBy(mode)}
-              whileHover={sortBy !== mode ? { color: "#f5c518" } : {}}
-              whileTap={{ scale: 0.95 }}
-              transition={{ duration: 0.15 }}
-              style={{
-                padding: "7px 16px",
-                background: sortBy === mode ? "#f5c518" : "transparent",
-                color: sortBy === mode ? "#0c0c0c" : "#c8c4bc",
-                border: "none",
-                borderRadius: 2,
-                fontFamily: "monospace",
-                fontSize: 9,
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-                fontWeight: sortBy === mode ? 700 : 400,
-                transition: "background 0.15s, color 0.15s",
-              }}
-            >
-              {mode === "newest" ? "Newest" : "Top Voted"}
-            </motion.button>
-          ))}
+        {/* ── Controls: filter + sort ───────────────────────────────────── */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          {/* Filter toggle */}
+          <div style={{ display: "flex", border: "1px solid #6a6a6a", borderRadius: 2 }}>
+            {(["all", "liked"] as const).map((mode) => (
+              <motion.button
+                key={mode}
+                onClick={() => setFilterBy(mode)}
+                whileHover={filterBy !== mode ? { color: "#f5c518" } : {}}
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                style={{
+                  padding: "7px 16px",
+                  background: filterBy === mode ? "#f5c518" : "transparent",
+                  color: filterBy === mode ? "#0c0c0c" : "#c8c4bc",
+                  border: "none",
+                  borderRadius: 2,
+                  fontFamily: "monospace",
+                  fontSize: 9,
+                  letterSpacing: "0.2em",
+                  textTransform: "uppercase",
+                  cursor: "pointer",
+                  fontWeight: filterBy === mode ? 700 : 400,
+                  transition: "background 0.15s, color 0.15s",
+                }}
+              >
+                {mode === "all" ? "All" : "★ Liked"}
+              </motion.button>
+            ))}
+          </div>
+
+          {/* Sort toggle */}
+          <div style={{ display: "flex", border: "1px solid #6a6a6a", borderRadius: 2 }}>
+            {(["newest", "top"] as const).map((mode) => (
+              <motion.button
+                key={mode}
+                onClick={() => setSortBy(mode)}
+                whileHover={sortBy !== mode ? { color: "#f5c518" } : {}}
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                style={{
+                  padding: "7px 16px",
+                  background: sortBy === mode ? "#f5c518" : "transparent",
+                  color: sortBy === mode ? "#0c0c0c" : "#c8c4bc",
+                  border: "none",
+                  borderRadius: 2,
+                  fontFamily: "monospace",
+                  fontSize: 9,
+                  letterSpacing: "0.2em",
+                  textTransform: "uppercase",
+                  cursor: "pointer",
+                  fontWeight: sortBy === mode ? 700 : 400,
+                  transition: "background 0.15s, color 0.15s",
+                }}
+              >
+                {mode === "newest" ? "Newest" : "Top Voted"}
+              </motion.button>
+            ))}
+          </div>
         </div>
       </motion.div>
 

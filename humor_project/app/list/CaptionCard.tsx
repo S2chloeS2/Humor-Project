@@ -148,7 +148,7 @@ export default function CaptionCard({
               fontFamily: "monospace",
               fontSize: 11,
               letterSpacing: "0.1em",
-              color: likes > 0 ? "#f5c518" : "#6b6b6b",
+              color: likes > 0 ? "#f5c518" : "#c8c4bc",
               display: "flex",
               alignItems: "center",
               gap: 5,
