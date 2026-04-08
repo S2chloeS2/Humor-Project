@@ -225,13 +225,14 @@ export default function CaptionCard({
                 fontFamily: "monospace",
                 fontSize: 9,
                 letterSpacing: "0.14em",
-                color: "#3a3a3a",
-                textDecoration: "none",
+                color: "#6b6b6b",
+                textDecoration: "underline",
+                textUnderlineOffset: "3px",
                 textTransform: "uppercase",
                 transition: "color 0.15s",
               }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#f5c518"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#3a3a3a"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#6b6b6b"; }}
             >
               Sign in to vote
             </a>
