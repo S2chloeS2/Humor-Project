@@ -155,6 +155,29 @@ export default function CaptionCard({
             ★ {likes}
           </span>
 
+          {/* Copy button */}
+          <motion.button
+            onClick={handleCopy}
+            whileHover={{ borderColor: "#f5c518", color: "#f5c518" }}
+            whileTap={{ scale: 0.9 }}
+            transition={{ duration: 0.15 }}
+            style={{
+              background: "transparent",
+              border: `1px solid ${copied ? "#f5c518" : "#2a2a2a"}`,
+              borderRadius: 2,
+              color: copied ? "#f5c518" : "#3a3a3a",
+              fontFamily: "monospace",
+              fontSize: 9,
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+              padding: "4px 10px",
+              cursor: "pointer",
+              transition: "border-color 0.15s, color 0.15s",
+            }}
+          >
+            {copied ? "Copied!" : "Copy"}
+          </motion.button>
+
           {/* Vote buttons */}
           {isLoggedIn ? (
             <div style={{ display: "flex", gap: 4 }}>
