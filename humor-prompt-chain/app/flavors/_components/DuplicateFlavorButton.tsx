@@ -12,7 +12,6 @@ export default function DuplicateFlavorButton({
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
 
   async function handleDuplicate() {
     if (loading) return;
@@ -21,16 +20,14 @@ export default function DuplicateFlavorButton({
     const res = await fetch(`/api/flavors/${id}/duplicate`, { method: "POST" });
     const data = await res.json();
 
-    setLoading(false);
-
     if (!res.ok) {
+      setLoading(false);
       alert(data.error || "Failed to duplicate flavor");
       return;
     }
 
-    setDone(true);
-    setTimeout(() => setDone(false), 2000);
-    router.refresh();
+    // 복사된 새 flavor Studio로 바로 이동
+    router.push(`/flavors/${data.id}`);
   }
 
   return (
@@ -38,36 +35,23 @@ export default function DuplicateFlavorButton({
       onClick={handleDuplicate}
       disabled={loading}
       title={`Duplicate "${slug}"`}
-      className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-mono font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
+      className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
       style={{
         border: "1px solid var(--border-accent)",
-        color: done ? "#34d399" : "var(--accent)",
-        background: done
-          ? "rgba(52,211,153,0.08)"
-          : "rgba(245,158,11,0.07)",
+        color: "var(--accent)",
+        background: "rgba(245,158,11,0.07)",
+        whiteSpace: "nowrap",
       }}
     >
       {loading ? (
         <>
-          <span
-            style={{
-              display: "inline-block",
-              animation: "spin 0.7s linear infinite",
-            }}
-          >
-            ⟳
-          </span>
+          <span style={{ display: "inline-block", animation: "spin 0.7s linear infinite" }}>⟳</span>
           Copying…
         </>
-      ) : done ? (
-        <>✓ Copied!</>
       ) : (
         <>⧉ Duplicate</>
       )}
-
-      <style>{`
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      `}</style>
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </button>
   );
 }

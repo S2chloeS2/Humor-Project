@@ -18,19 +18,19 @@ export default function DeleteFlavorButton({ id, slug }: { id: string | number; 
 
   if (confirm) {
     return (
-      <div className="flex items-center gap-1">
-        <span className="text-xs font-mono mr-1" style={{ color: "var(--text-muted)" }}>Sure?</span>
+      <div className="flex items-center gap-1.5">
+        <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>Sure?</span>
         <button
           onClick={handleDelete}
           disabled={loading}
-          className="text-xs px-2 py-1 rounded font-mono"
-          style={{ background: "rgba(239,68,68,0.15)", color: "var(--danger)", border: "1px solid rgba(239,68,68,0.3)" }}
+          className="px-3 py-2 rounded-xl text-sm font-semibold font-mono transition-all hover:opacity-90"
+          style={{ background: "rgba(239,68,68,0.15)", color: "var(--danger)", border: "1px solid rgba(239,68,68,0.35)" }}
         >
-          {loading ? "..." : "Yes"}
+          {loading ? "…" : "Yes"}
         </button>
         <button
           onClick={() => setConfirm(false)}
-          className="text-xs px-2 py-1 rounded font-mono"
+          className="px-3 py-2 rounded-xl text-sm font-mono transition-all hover:opacity-80"
           style={{ border: "1px solid var(--border)", color: "var(--text-muted)", background: "transparent" }}
         >
           No
@@ -43,10 +43,10 @@ export default function DeleteFlavorButton({ id, slug }: { id: string | number; 
     <button
       onClick={() => setConfirm(true)}
       title={`Delete ${slug}`}
-      className="text-xs px-2.5 py-1.5 rounded-lg font-mono transition-all hover:opacity-80"
-      style={{ background: "rgba(239,68,68,0.08)", color: "var(--danger)", border: "1px solid rgba(239,68,68,0.2)" }}
+      className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-80 active:scale-95"
+      style={{ background: "rgba(239,68,68,0.07)", color: "var(--danger)", border: "1px solid rgba(239,68,68,0.25)", whiteSpace: "nowrap" }}
     >
-      Delete
+      🗑 Delete
     </button>
   );
 }

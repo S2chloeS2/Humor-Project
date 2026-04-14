@@ -198,6 +198,7 @@ export default async function FlavorsPage({
 
                     {/* Actions */}
                     <div className="flex items-center gap-2 shrink-0 pt-1">
+                      {/* 주요 액션 */}
                       <DuplicateFlavorButton id={String(f.id)} slug={f.slug} />
                       <Link
                         href={`/flavors/${f.id}`}
@@ -205,10 +206,14 @@ export default async function FlavorsPage({
                         style={{
                           background: "linear-gradient(135deg, #f59e0b, #f97316)",
                           color: "#0f172a",
+                          whiteSpace: "nowrap",
                         }}
                       >
                         Open Studio →
                       </Link>
+                      {/* 구분선 */}
+                      <div style={{ width: 1, height: 28, background: "var(--border)", flexShrink: 0 }} />
+                      {/* 위험 액션 */}
                       <DeleteFlavorButton id={f.id} slug={f.slug} />
                     </div>
                   </div>
