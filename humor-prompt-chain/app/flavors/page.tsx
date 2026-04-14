@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import CreateFlavorButton from "./_components/CreateFlavorButton";
 import DeleteFlavorButton from "./_components/DeleteFlavorButton";
+import DuplicateFlavorButton from "./_components/DuplicateFlavorButton";
 
 const PAGE_SIZE = 8;
 
@@ -197,6 +198,7 @@ export default async function FlavorsPage({
 
                     {/* Actions */}
                     <div className="flex items-center gap-2 shrink-0 pt-1">
+                      <DuplicateFlavorButton id={String(f.id)} slug={f.slug} />
                       <Link
                         href={`/flavors/${f.id}`}
                         className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95"
