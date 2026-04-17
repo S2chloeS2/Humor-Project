@@ -17,13 +17,24 @@ async function checkAdmin() {
 }
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const ctx = await checkAdmin();
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
+
+  // 요청 body에서 slug, description 읽기
+  let bodySlug: string | undefined;
+  let bodyDescription: string | undefined;
+  try {
+    const body = await request.json();
+    bodySlug = body.slug?.trim() || undefined;
+    bodyDescription = body.description?.trim() ?? undefined;
+  } catch {
+    // body 없으면 무시
+  }
 
   // 1. 원본 flavor 가져오기
   const { data: original, error: flavorErr } = await ctx.admin
@@ -36,8 +47,8 @@ export async function POST(
     return NextResponse.json({ error: "Flavor not found" }, { status: 404 });
   }
 
-  // 2. 유니크한 slug 만들기 (copy-of-xxx, copy-of-xxx-2, ...)
-  const baseSlug = `copy-of-${original.slug}`;
+  // 2. 유니크한 slug 만들기
+  const baseSlug = bodySlug ?? `copy-of-${original.slug}`;
   let uniqueSlug = baseSlug;
   let attempt = 1;
 
@@ -54,15 +65,21 @@ export async function POST(
     uniqueSlug = `${baseSlug}-${attempt}`;
   }
 
+  // description 결정: body에서 온 값 우선, 없으면 원본 기반 자동 생성
+  const finalDescription =
+    bodyDescription !== undefined
+      ? bodyDescription
+      : original.description
+      ? `[Copy] ${original.description}`
+      : `Copy of ${original.slug}`;
+
   // 3. 새 flavor 생성
   const now = new Date().toISOString();
   const { data: newFlavor, error: createErr } = await ctx.admin
     .from("humor_flavors")
     .insert({
       slug: uniqueSlug,
-      description: original.description
-        ? `[Copy] ${original.description}`
-        : `Copy of ${original.slug}`,
+      description: finalDescription,
       created_datetime_utc: now,
       created_by_user_id: ctx.user.id,
       modified_by_user_id: ctx.user.id,
