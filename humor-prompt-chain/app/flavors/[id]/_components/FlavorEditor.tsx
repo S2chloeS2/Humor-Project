@@ -148,6 +148,20 @@ export default function FlavorEditor({ flavor }: { flavor: Flavor }) {
                 ✓ Saved
               </span>
             )}
+            {isDirty && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSlug(flavor.slug);
+                  setDescription(flavor.description ?? "");
+                  setSaveError("");
+                }}
+                className="px-4 py-2 rounded-xl text-sm font-mono transition-all hover:opacity-80"
+                style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", background: "transparent" }}
+              >
+                Discard
+              </button>
+            )}
             <button
               type="submit"
               disabled={!isDirty || saving || !slug.trim()}
