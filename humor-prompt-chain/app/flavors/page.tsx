@@ -279,7 +279,8 @@ export default async function FlavorsPage({
         </div>
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-8">
+          <div className="flex items-center justify-center gap-1.5 mt-8 flex-wrap">
+            {/* Prev */}
             <Link
               href={`/flavors?page=${page - 1}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
               className={`px-4 py-2 rounded-lg text-sm font-mono transition-all ${page <= 1 ? "pointer-events-none opacity-30" : "hover:opacity-80"}`}
@@ -288,22 +289,48 @@ export default async function FlavorsPage({
               ← Prev
             </Link>
 
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <Link
-                key={p}
-                href={`/flavors?page=${p}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-                className="w-9 h-9 rounded-lg text-sm font-mono flex items-center justify-center transition-all hover:opacity-80"
-                style={{
-                  background: p === page ? "linear-gradient(135deg, #f59e0b, #f97316)" : "var(--bg-card)",
-                  color: p === page ? "#0f172a" : "var(--text-secondary)",
-                  border: "1px solid var(--border)",
-                  fontWeight: p === page ? "700" : "400",
-                }}
-              >
-                {p}
-              </Link>
-            ))}
+            {/* Smart page numbers: 1 … (cur-1) cur (cur+1) … last */}
+            {(() => {
+              const slots: (number | "…")[] = [];
+              const delta = 1; // pages shown around current
 
+              const rangeStart = Math.max(2, page - delta);
+              const rangeEnd   = Math.min(totalPages - 1, page + delta);
+
+              slots.push(1);
+              if (rangeStart > 2) slots.push("…");
+              for (let p = rangeStart; p <= rangeEnd; p++) slots.push(p);
+              if (rangeEnd < totalPages - 1) slots.push("…");
+              if (totalPages > 1) slots.push(totalPages);
+
+              return slots.map((slot, i) =>
+                slot === "…" ? (
+                  <span
+                    key={`ellipsis-${i}`}
+                    className="w-9 h-9 flex items-center justify-center text-sm font-mono"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    …
+                  </span>
+                ) : (
+                  <Link
+                    key={slot}
+                    href={`/flavors?page=${slot}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                    className="w-9 h-9 rounded-lg text-sm font-mono flex items-center justify-center transition-all hover:opacity-80"
+                    style={{
+                      background: slot === page ? "linear-gradient(135deg, #f59e0b, #f97316)" : "var(--bg-card)",
+                      color: slot === page ? "#0f172a" : "var(--text-secondary)",
+                      border: "1px solid var(--border)",
+                      fontWeight: slot === page ? "700" : "400",
+                    }}
+                  >
+                    {slot}
+                  </Link>
+                )
+              );
+            })()}
+
+            {/* Next */}
             <Link
               href={`/flavors?page=${page + 1}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
               className={`px-4 py-2 rounded-lg text-sm font-mono transition-all ${page >= totalPages ? "pointer-events-none opacity-30" : "hover:opacity-80"}`}
