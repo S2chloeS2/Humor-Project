@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import StepModal from "./StepModal";
 
@@ -189,7 +190,7 @@ function StepCard({
 }: {
   step: Step; idx: number; total: number; moving: boolean;
   onMoveUp: () => void; onMoveDown: () => void;
-  onEdit: () => void; onDelete: () => void;
+  onEdit: () => void; onDelete: () => Promise<void> | void;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -336,7 +337,7 @@ function StepCard({
             Edit
           </button>
 
-          <DeleteStepButton onDelete={onDelete} />
+          <DeleteStepButton onDelete={onDelete} stepName={step.description} />
         </div>
       </div>
 
@@ -382,35 +383,95 @@ function PromptBlock({ label, content, color }: { label: string; content: string
   );
 }
 
-function DeleteStepButton({ onDelete }: { onDelete: () => void }) {
-  const [confirm, setConfirm] = useState(false);
-  if (confirm) {
-    return (
-      <div className="flex gap-1.5 items-center">
-        <button
-          onClick={onDelete}
-          className="text-xs px-3 py-1.5 rounded-lg font-mono font-semibold"
-          style={{ background: "rgba(239,68,68,0.12)", color: "var(--danger)", border: "1px solid rgba(239,68,68,0.25)" }}
-        >
-          Yes
-        </button>
-        <button
-          onClick={() => setConfirm(false)}
-          className="text-xs px-3 py-1.5 rounded-lg font-mono"
-          style={{ border: "1px solid var(--border)", color: "var(--text-muted)", background: "transparent" }}
-        >
-          No
-        </button>
-      </div>
-    );
+function DeleteStepButton({ onDelete, stepName }: { onDelete: () => void; stepName?: string | null }) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  async function handleConfirm() {
+    setLoading(true);
+    await onDelete();
+    setLoading(false);
+    setOpen(false);
   }
+
   return (
-    <button
-      onClick={() => setConfirm(true)}
-      className="px-3 py-1.5 rounded-lg text-xs font-mono transition-all hover:opacity-80"
-      style={{ background: "rgba(239,68,68,0.06)", color: "var(--danger)", border: "1px solid rgba(239,68,68,0.18)" }}
-    >
-      Delete
-    </button>
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="px-3 py-1.5 rounded-lg text-xs font-mono transition-all hover:opacity-80"
+        style={{ background: "rgba(239,68,68,0.06)", color: "var(--danger)", border: "1px solid rgba(239,68,68,0.18)" }}
+      >
+        🗑
+      </button>
+
+      {mounted && open && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
+          onClick={(e) => { if (e.target === e.currentTarget && !loading) setOpen(false); }}
+        >
+          <div
+            className="w-full max-w-sm rounded-xl p-6 animate-fade-up"
+            style={{ backgroundColor: "var(--bg-card)", border: "1px solid rgba(239,68,68,0.4)" }}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0"
+                style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.25)" }}
+              >
+                🗑
+              </div>
+              <div>
+                <h2 className="text-base font-bold leading-none mb-1" style={{ color: "var(--text-primary)" }}>
+                  Delete Step
+                </h2>
+                <p className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>
+                  This action cannot be undone
+                </p>
+              </div>
+            </div>
+
+            <div
+              className="rounded-xl px-4 py-3 mb-5"
+              style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.18)" }}
+            >
+              <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                Delete{" "}
+                {stepName
+                  ? <><span className="font-mono font-bold" style={{ color: "var(--danger)" }}>{stepName}</span>?</>
+                  : "this step?"
+                }
+                {" "}This step and all its prompts will be permanently removed.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                disabled={loading}
+                className="flex-1 py-2.5 rounded-xl text-sm font-mono transition-all hover:opacity-80 disabled:opacity-40"
+                style={{ border: "1px solid var(--border)", color: "var(--text-secondary)", background: "transparent" }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirm}
+                disabled={loading}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50"
+                style={{ background: "linear-gradient(135deg, #ef4444, #dc2626)", color: "#fff" }}
+              >
+                {loading ? "Deleting…" : "Yes, Delete"}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
   );
 }
