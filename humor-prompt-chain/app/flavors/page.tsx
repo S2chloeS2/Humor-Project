@@ -173,16 +173,17 @@ export default async function FlavorsPage({
                   <div className="flex items-start justify-between gap-6">
                     {/* Left */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h2 className="text-2xl font-black font-mono leading-none" style={{ color: "var(--accent)" }}>
+                      <div className="flex items-center gap-2.5 mb-2 flex-wrap">
+                        <h2 className="text-2xl font-black font-mono leading-none truncate" style={{ color: "var(--accent)" }}>
                           {f.slug}
                         </h2>
                         <span
-                          className="text-xs font-mono px-2.5 py-1 rounded-full font-semibold"
+                          className="text-xs font-mono px-2.5 py-1 rounded-full font-semibold shrink-0"
                           style={{
                             background: "rgba(245,158,11,0.1)",
                             color: "var(--accent)",
                             border: "1px solid rgba(245,158,11,0.2)",
+                            whiteSpace: "nowrap",
                           }}
                         >
                           {steps.length} step{steps.length !== 1 ? "s" : ""}
@@ -197,9 +198,9 @@ export default async function FlavorsPage({
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-2 shrink-0 pt-1">
+                    <div className="flex items-center gap-2 shrink-0">
                       {/* 주요 액션 */}
-                      <DuplicateFlavorButton id={String(f.id)} slug={f.slug} />
+                      <DuplicateFlavorButton id={String(f.id)} slug={f.slug} description={f.description} />
                       <Link
                         href={`/flavors/${f.id}`}
                         className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95"
