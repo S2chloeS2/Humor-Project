@@ -16,6 +16,7 @@ export default function CaptionGrid() {
   const [sortBy, setSortBy] = useState<"newest" | "top">("newest");
   const [photoFilter, setPhotoFilter] = useState<"all" | "photo" | "nophoto">("all");
   const [voteFilter, setVoteFilter] = useState<"all" | "my-votes" | "upvoted" | "downvoted">("all");
+  const [voteDropdownOpen, setVoteDropdownOpen] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
   const supabase = createClient();
@@ -69,10 +70,16 @@ export default function CaptionGrid() {
     const currentVote = voteFilterRef.current;
     const currentVotes = userVotesRef.current;
 
-    // Always use left join so we can access image URL even when null
+    // "nophoto" needs left join to include captions without image records
+    // "all" and "photo" use inner join (proven to work, only returns captions with images)
+    const isNophoto = currentPhoto === "nophoto";
+    const joinClause = isNophoto
+      ? "id, content, like_count, images!left(url)"
+      : "id, content, like_count, images!inner(url)";
+
     let query = supabase
       .from("captions")
-      .select("id, content, like_count, images(url)")
+      .select(joinClause)
       .eq("is_public", true)
       .not("content", "is", null)
       .neq("content", "");
@@ -86,8 +93,7 @@ export default function CaptionGrid() {
         return false;
       });
       if (votedIds.length === 0) {
-        // No matching votes → show empty immediately
-        setCaptions(currentPage === 0 ? [] : (prev) => prev);
+        if (currentPage === 0) setCaptions([]);
         setHasMore(false);
         setLoading(false);
         return;
@@ -101,19 +107,22 @@ export default function CaptionGrid() {
 
     if (error) {
       console.error("Caption load error:", error);
-    } else if (data) {
+      setLoading(false);
+      return;
+    }
+
+    if (data) {
       // Normalize image URL — handle both object {url} and array [{url}] from Supabase
       const normalize = (c: any) => {
         const raw = c.images;
         const rawUrl = Array.isArray(raw) ? raw[0]?.url : raw?.url;
-        // Only treat as valid if it's a real http URL
         const url = typeof rawUrl === "string" && rawUrl.startsWith("http") ? rawUrl : null;
         return { ...c, _imageUrl: url };
       };
 
       let normalized = data.map(normalize);
 
-      // Photo filter — client-side for accuracy (URL validity is known after normalize)
+      // Photo filter — client-side after normalize so URL validity is fully known
       if (currentPhoto === "photo") {
         normalized = normalized.filter((c) => c._imageUrl !== null);
       } else if (currentPhoto === "nophoto") {
@@ -321,43 +330,90 @@ export default function CaptionGrid() {
               ))}
             </div>
 
-            {/* Vote filter — only shown when logged in */}
-            {userId && (
-              <div style={{ display: "flex", border: "1px solid #6a6a6a", borderRadius: 2 }}>
-                {([
-                  { val: "all",       label: "All" },
-                  { val: "my-votes",  label: "My Votes" },
-                  { val: "upvoted",   label: "👍 Upvoted" },
-                  { val: "downvoted", label: "👎 Downvoted" },
-                ] as const).map(({ val, label }, i) => (
+            {/* Vote filter dropdown — only shown when logged in */}
+            {userId && (() => {
+              const VOTE_OPTIONS = [
+                { val: "all",       label: "All Votes" },
+                { val: "my-votes",  label: "My Votes" },
+                { val: "upvoted",   label: "👍 Upvoted" },
+                { val: "downvoted", label: "👎 Downvoted" },
+              ] as const;
+              const current = VOTE_OPTIONS.find(o => o.val === voteFilter)!;
+              const isActive = voteFilter !== "all";
+              return (
+                <div style={{ position: "relative" }}>
                   <motion.button
-                    key={val}
-                    onClick={() => setVoteFilter(val)}
-                    whileHover={voteFilter !== val ? { color: "#f5c518" } : {}}
+                    onClick={() => setVoteDropdownOpen(o => !o)}
                     whileTap={{ scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
                     style={{
-                      padding: "7px 12px",
-                      background: voteFilter === val ? "#f5c518" : "transparent",
-                      color: voteFilter === val ? "#0c0c0c" : "#c8c4bc",
-                      border: "none",
-                      borderLeft: i > 0 ? "1px solid #3a3a3a" : "none",
+                      padding: "7px 14px",
+                      background: isActive ? "#f5c518" : "transparent",
+                      color: isActive ? "#0c0c0c" : "#c8c4bc",
+                      border: "1px solid #6a6a6a",
                       borderRadius: 2,
                       fontFamily: "monospace",
                       fontSize: 9,
-                      letterSpacing: "0.16em",
+                      letterSpacing: "0.18em",
                       textTransform: "uppercase",
                       cursor: "pointer",
-                      fontWeight: voteFilter === val ? 700 : 400,
-                      transition: "background 0.15s, color 0.15s",
+                      fontWeight: isActive ? 700 : 400,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {label}
+                    {current.label} {voteDropdownOpen ? "▲" : "▼"}
                   </motion.button>
-                ))}
-              </div>
-            )}
+
+                  {voteDropdownOpen && (
+                    <>
+                      {/* backdrop to close */}
+                      <div
+                        style={{ position: "fixed", inset: 0, zIndex: 10 }}
+                        onClick={() => setVoteDropdownOpen(false)}
+                      />
+                      <div style={{
+                        position: "absolute",
+                        top: "calc(100% + 6px)",
+                        right: 0,
+                        zIndex: 20,
+                        background: "#111",
+                        border: "1px solid #3a3a3a",
+                        borderRadius: 4,
+                        overflow: "hidden",
+                        minWidth: 140,
+                      }}>
+                        {VOTE_OPTIONS.map(({ val, label }) => (
+                          <button
+                            key={val}
+                            onClick={() => { setVoteFilter(val); setVoteDropdownOpen(false); }}
+                            style={{
+                              display: "block",
+                              width: "100%",
+                              padding: "9px 14px",
+                              background: voteFilter === val ? "rgba(245,197,24,0.12)" : "transparent",
+                              color: voteFilter === val ? "#f5c518" : "#c8c4bc",
+                              border: "none",
+                              borderBottom: "1px solid #1c1c1c",
+                              fontFamily: "monospace",
+                              fontSize: 9,
+                              letterSpacing: "0.16em",
+                              textTransform: "uppercase",
+                              cursor: "pointer",
+                              textAlign: "left",
+                              fontWeight: voteFilter === val ? 700 : 400,
+                            }}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Row 2: Sort */}
