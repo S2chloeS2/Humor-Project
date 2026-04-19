@@ -67,28 +67,37 @@ export default function StepList({
     if (direction === "down" && idx === steps.length - 1) { setMovingId(null); return; }
 
     const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+    const originalSteps = [...steps];
     const newSteps = [...steps];
     const tempOrder = newSteps[idx].order_by;
     newSteps[idx] = { ...newSteps[idx], order_by: newSteps[swapIdx].order_by };
     newSteps[swapIdx] = { ...newSteps[swapIdx], order_by: tempOrder };
     newSteps.sort((a, b) => a.order_by - b.order_by);
-    setSteps(newSteps);
+    setSteps(newSteps); // optimistic
 
-    await Promise.all([
-      fetch(`/api/flavors/${flavorId}/steps/${newSteps[idx].id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ order_by: newSteps[idx].order_by }),
-      }),
-      fetch(`/api/flavors/${flavorId}/steps/${newSteps[swapIdx].id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ order_by: newSteps[swapIdx].order_by }),
-      }),
-    ]);
-
-    setMovingId(null);
-    router.refresh();
+    try {
+      const results = await Promise.all([
+        fetch(`/api/flavors/${flavorId}/steps/${newSteps[idx].id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order_by: newSteps[idx].order_by }),
+        }),
+        fetch(`/api/flavors/${flavorId}/steps/${newSteps[swapIdx].id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order_by: newSteps[swapIdx].order_by }),
+        }),
+      ]);
+      if (results.some((r) => !r.ok)) {
+        setSteps(originalSteps); // revert on failure
+      } else {
+        router.refresh();
+      }
+    } catch {
+      setSteps(originalSteps); // revert on network error
+    } finally {
+      setMovingId(null);
+    }
   }
 
   async function deleteStep(stepId: string) {

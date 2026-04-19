@@ -56,8 +56,20 @@ export default function FlavorEditor({ flavor }: { flavor: Flavor }) {
 
   async function handleDelete() {
     setDeleting(true);
-    await fetch(`/api/flavors/${flavor.id}`, { method: "DELETE" });
-    router.push("/flavors");
+    try {
+      const res = await fetch(`/api/flavors/${flavor.id}`, { method: "DELETE" });
+      if (res.ok) {
+        router.push("/flavors");
+      } else {
+        setDeleting(false);
+        setDeleteOpen(false);
+        alert("Failed to delete flavor. Please try again.");
+      }
+    } catch {
+      setDeleting(false);
+      setDeleteOpen(false);
+      alert("Network error. Please check your connection and try again.");
+    }
   }
 
   return (
