@@ -14,7 +14,7 @@ export default function CaptionGrid() {
   const [userId, setUserId] = useState<string | null>(null);
   const [userVotes, setUserVotes] = useState<Record<string, number>>({});
   const [sortBy, setSortBy] = useState<"newest" | "top">("newest");
-  const [filterBy, setFilterBy] = useState<"all" | "liked">("all");
+  const [filterBy, setFilterBy] = useState<"all" | "photo" | "liked">("all");
   const [hasMore, setHasMore] = useState(true);
 
   const supabase = createClient();
@@ -22,7 +22,7 @@ export default function CaptionGrid() {
   const sortByRef = useRef(sortBy);
   sortByRef.current = sortBy;
   const filterByRef = useRef(filterBy);
-  filterByRef.current = filterBy;
+  filterByRef.current = filterBy as "all" | "photo" | "liked";
 
   useEffect(() => {
     async function init() {
@@ -69,7 +69,7 @@ export default function CaptionGrid() {
         id,
         content,
         like_count,
-        images!inner (
+        images (
           url
         )
       `)
@@ -77,6 +77,10 @@ export default function CaptionGrid() {
       .not("content", "is", null)
       .neq("content", "");
 
+    if (currentFilter === "photo") {
+      // inner join equivalent: only captions that have a real image URL
+      query = (query as any).not("images.url", "is", null);
+    }
     if (currentFilter === "liked") {
       query = query.gt("like_count", 0);
     }
@@ -254,7 +258,7 @@ export default function CaptionGrid() {
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           {/* Filter toggle */}
           <div style={{ display: "flex", border: "1px solid #6a6a6a", borderRadius: 2 }}>
-            {(["all", "liked"] as const).map((mode) => (
+            {(["all", "photo", "liked"] as const).map((mode) => (
               <motion.button
                 key={mode}
                 onClick={() => setFilterBy(mode)}
@@ -262,21 +266,23 @@ export default function CaptionGrid() {
                 whileTap={{ scale: 0.95 }}
                 transition={{ duration: 0.15 }}
                 style={{
-                  padding: "7px 16px",
+                  padding: "7px 14px",
                   background: filterBy === mode ? "#f5c518" : "transparent",
                   color: filterBy === mode ? "#0c0c0c" : "#c8c4bc",
                   border: "none",
+                  borderLeft: mode !== "all" ? "1px solid #3a3a3a" : "none",
                   borderRadius: 2,
                   fontFamily: "monospace",
                   fontSize: 9,
-                  letterSpacing: "0.2em",
+                  letterSpacing: "0.18em",
                   textTransform: "uppercase",
                   cursor: "pointer",
                   fontWeight: filterBy === mode ? 700 : 400,
                   transition: "background 0.15s, color 0.15s",
+                  whiteSpace: "nowrap",
                 }}
               >
-                {mode === "all" ? "All" : "★ Liked"}
+                {mode === "all" ? "All" : mode === "photo" ? "📷 Photo" : "★ Liked"}
               </motion.button>
             ))}
           </div>
