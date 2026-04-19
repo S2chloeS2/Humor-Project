@@ -393,7 +393,7 @@ export default function CaptionGrid() {
           <CaptionCard
             key={`${c.id}-${idx}`}
             captionId={c.id}
-            imageUrl={c.images?.url}
+            imageUrl={Array.isArray(c.images) ? c.images[0]?.url : c.images?.url}
             content={c.content}
             likes={c.like_count}
             isLoggedIn={!!userId}
