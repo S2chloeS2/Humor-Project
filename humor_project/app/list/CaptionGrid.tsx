@@ -15,7 +15,7 @@ export default function CaptionGrid() {
   const [userVotes, setUserVotes] = useState<Record<string, number>>({});
   const [sortBy, setSortBy] = useState<"newest" | "top">("newest");
   const [photoFilter, setPhotoFilter] = useState<"all" | "photo" | "nophoto">("all");
-  const [likedFilter, setLikedFilter] = useState<"all" | "liked">("all");
+  const [voteFilter, setVoteFilter] = useState<"all" | "my-votes" | "upvoted" | "downvoted">("all");
   const [hasMore, setHasMore] = useState(true);
 
   const supabase = createClient();
@@ -23,8 +23,10 @@ export default function CaptionGrid() {
   sortByRef.current = sortBy;
   const photoFilterRef = useRef(photoFilter);
   photoFilterRef.current = photoFilter;
-  const likedFilterRef = useRef(likedFilter);
-  likedFilterRef.current = likedFilter;
+  const voteFilterRef = useRef(voteFilter);
+  voteFilterRef.current = voteFilter;
+  const userVotesRef = useRef(userVotes);
+  userVotesRef.current = userVotes;
 
   useEffect(() => {
     async function init() {
@@ -55,7 +57,7 @@ export default function CaptionGrid() {
     setHasMore(true);
     loadMore(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortBy, photoFilter, likedFilter]);
+  }, [sortBy, photoFilter, voteFilter]);
 
   async function loadMore(overridePage?: number) {
     if (loading) return;
@@ -64,21 +66,33 @@ export default function CaptionGrid() {
     const currentPage = overridePage ?? page;
     const currentSort = sortByRef.current;
     const currentPhoto = photoFilterRef.current;
-    const currentLiked = likedFilterRef.current;
+    const currentVote = voteFilterRef.current;
+    const currentVotes = userVotesRef.current;
 
-    // "photo" and "all" use inner join (only captions that have an image record)
-    // "nophoto" uses left join so image-less captions are included
-    const useLeftJoin = currentPhoto === "nophoto";
-
+    // Always use left join so we can access image URL even when null
     let query = supabase
       .from("captions")
-      .select(`id, content, like_count, ${useLeftJoin ? "images(url)" : "images!inner(url)"}`)
+      .select("id, content, like_count, images(url)")
       .eq("is_public", true)
       .not("content", "is", null)
       .neq("content", "");
 
-    if (currentLiked === "liked") {
-      query = query.gt("like_count", 0);
+    // Vote filter — DB-level filtering by caption IDs we know the user voted on
+    if (currentVote !== "all") {
+      const votedIds = Object.keys(currentVotes).filter((id) => {
+        if (currentVote === "my-votes") return true;
+        if (currentVote === "upvoted")   return currentVotes[id] === 1;
+        if (currentVote === "downvoted") return currentVotes[id] === -1;
+        return false;
+      });
+      if (votedIds.length === 0) {
+        // No matching votes → show empty immediately
+        setCaptions(currentPage === 0 ? [] : (prev) => prev);
+        setHasMore(false);
+        setLoading(false);
+        return;
+      }
+      query = query.in("id", votedIds);
     }
 
     const { data, error } = await query
@@ -88,18 +102,22 @@ export default function CaptionGrid() {
     if (error) {
       console.error("Caption load error:", error);
     } else if (data) {
-      // Normalize image url — Supabase may return images as object or array depending on join type
+      // Normalize image URL — handle both object {url} and array [{url}] from Supabase
       const normalize = (c: any) => {
         const raw = c.images;
-        const url = Array.isArray(raw) ? raw[0]?.url : raw?.url;
-        return { ...c, _imageUrl: url ?? null };
+        const rawUrl = Array.isArray(raw) ? raw[0]?.url : raw?.url;
+        // Only treat as valid if it's a real http URL
+        const url = typeof rawUrl === "string" && rawUrl.startsWith("http") ? rawUrl : null;
+        return { ...c, _imageUrl: url };
       };
 
       let normalized = data.map(normalize);
 
-      // "nophoto": keep only rows where image URL is absent
-      if (currentPhoto === "nophoto") {
-        normalized = normalized.filter((c) => !c._imageUrl);
+      // Photo filter — client-side for accuracy (URL validity is known after normalize)
+      if (currentPhoto === "photo") {
+        normalized = normalized.filter((c) => c._imageUrl !== null);
+      } else if (currentPhoto === "nophoto") {
+        normalized = normalized.filter((c) => c._imageUrl === null);
       }
 
       setCaptions((prev) => currentPage === 0 ? normalized : [...prev, ...normalized]);
@@ -303,39 +321,43 @@ export default function CaptionGrid() {
               ))}
             </div>
 
-            {/* Liked filter */}
-            <div style={{ display: "flex", border: "1px solid #6a6a6a", borderRadius: 2 }}>
-              {([
-                { val: "all",   label: "All Votes" },
-                { val: "liked", label: "★ Liked" },
-              ] as const).map(({ val, label }, i) => (
-                <motion.button
-                  key={val}
-                  onClick={() => setLikedFilter(val)}
-                  whileHover={likedFilter !== val ? { color: "#f5c518" } : {}}
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  style={{
-                    padding: "7px 14px",
-                    background: likedFilter === val ? "#f5c518" : "transparent",
-                    color: likedFilter === val ? "#0c0c0c" : "#c8c4bc",
-                    border: "none",
-                    borderLeft: i > 0 ? "1px solid #3a3a3a" : "none",
-                    borderRadius: 2,
-                    fontFamily: "monospace",
-                    fontSize: 9,
-                    letterSpacing: "0.18em",
-                    textTransform: "uppercase",
-                    cursor: "pointer",
-                    fontWeight: likedFilter === val ? 700 : 400,
-                    transition: "background 0.15s, color 0.15s",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {label}
-                </motion.button>
-              ))}
-            </div>
+            {/* Vote filter — only shown when logged in */}
+            {userId && (
+              <div style={{ display: "flex", border: "1px solid #6a6a6a", borderRadius: 2 }}>
+                {([
+                  { val: "all",       label: "All" },
+                  { val: "my-votes",  label: "My Votes" },
+                  { val: "upvoted",   label: "👍 Upvoted" },
+                  { val: "downvoted", label: "👎 Downvoted" },
+                ] as const).map(({ val, label }, i) => (
+                  <motion.button
+                    key={val}
+                    onClick={() => setVoteFilter(val)}
+                    whileHover={voteFilter !== val ? { color: "#f5c518" } : {}}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    style={{
+                      padding: "7px 12px",
+                      background: voteFilter === val ? "#f5c518" : "transparent",
+                      color: voteFilter === val ? "#0c0c0c" : "#c8c4bc",
+                      border: "none",
+                      borderLeft: i > 0 ? "1px solid #3a3a3a" : "none",
+                      borderRadius: 2,
+                      fontFamily: "monospace",
+                      fontSize: 9,
+                      letterSpacing: "0.16em",
+                      textTransform: "uppercase",
+                      cursor: "pointer",
+                      fontWeight: voteFilter === val ? 700 : 400,
+                      transition: "background 0.15s, color 0.15s",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {label}
+                  </motion.button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Row 2: Sort */}
