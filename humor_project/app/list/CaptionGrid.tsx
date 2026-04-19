@@ -66,13 +66,13 @@ export default function CaptionGrid() {
     const currentPhoto = photoFilterRef.current;
     const currentLiked = likedFilterRef.current;
 
-    // Use inner join for "photo" — guarantees image record exists
-    // Use left join for "all" and "nophoto" so we include image-less captions too
-    const joinType = currentPhoto === "photo" ? "images!inner(url)" : "images(url)";
+    // "photo" and "all" use inner join (only captions that have an image record)
+    // "nophoto" uses left join so image-less captions are included
+    const useLeftJoin = currentPhoto === "nophoto";
 
     let query = supabase
       .from("captions")
-      .select(`id, content, like_count, ${joinType}`)
+      .select(`id, content, like_count, ${useLeftJoin ? "images(url)" : "images!inner(url)"}`)
       .eq("is_public", true)
       .not("content", "is", null)
       .neq("content", "");
@@ -88,12 +88,21 @@ export default function CaptionGrid() {
     if (error) {
       console.error("Caption load error:", error);
     } else if (data) {
-      // For "nophoto": client-side filter (captions where image URL is absent)
-      const filtered = currentPhoto === "nophoto"
-        ? data.filter((c: any) => !c.images?.url)
-        : data;
+      // Normalize image url — Supabase may return images as object or array depending on join type
+      const normalize = (c: any) => {
+        const raw = c.images;
+        const url = Array.isArray(raw) ? raw[0]?.url : raw?.url;
+        return { ...c, _imageUrl: url ?? null };
+      };
 
-      setCaptions((prev) => currentPage === 0 ? filtered : [...prev, ...filtered]);
+      let normalized = data.map(normalize);
+
+      // "nophoto": keep only rows where image URL is absent
+      if (currentPhoto === "nophoto") {
+        normalized = normalized.filter((c) => !c._imageUrl);
+      }
+
+      setCaptions((prev) => currentPage === 0 ? normalized : [...prev, ...normalized]);
       setPage(currentPage + 1);
       if (data.length < PAGE_SIZE) setHasMore(false);
     }
@@ -373,7 +382,7 @@ export default function CaptionGrid() {
           <CaptionCard
             key={`${c.id}-${idx}`}
             captionId={c.id}
-            imageUrl={c.images?.url}
+            imageUrl={c._imageUrl ?? undefined}
             content={c.content}
             likes={c.like_count}
             isLoggedIn={!!userId}
