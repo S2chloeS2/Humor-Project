@@ -14,15 +14,17 @@ export default function CaptionGrid() {
   const [userId, setUserId] = useState<string | null>(null);
   const [userVotes, setUserVotes] = useState<Record<string, number>>({});
   const [sortBy, setSortBy] = useState<"newest" | "top">("newest");
-  const [filterBy, setFilterBy] = useState<"all" | "photo" | "liked">("all");
+  const [photoFilter, setPhotoFilter] = useState<"all" | "photo" | "nophoto">("all");
+  const [likedFilter, setLikedFilter] = useState<"all" | "liked">("all");
   const [hasMore, setHasMore] = useState(true);
 
   const supabase = createClient();
-  // Ref to track the current sort inside the async loadMore closure
   const sortByRef = useRef(sortBy);
   sortByRef.current = sortBy;
-  const filterByRef = useRef(filterBy);
-  filterByRef.current = filterBy as "all" | "photo" | "liked";
+  const photoFilterRef = useRef(photoFilter);
+  photoFilterRef.current = photoFilter;
+  const likedFilterRef = useRef(likedFilter);
+  likedFilterRef.current = likedFilter;
 
   useEffect(() => {
     async function init() {
@@ -46,14 +48,14 @@ export default function CaptionGrid() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-fetch from scratch whenever sortBy or filterBy changes
+  // Re-fetch from scratch whenever any filter/sort changes
   useEffect(() => {
     setCaptions([]);
     setPage(0);
     setHasMore(true);
     loadMore(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortBy, filterBy]);
+  }, [sortBy, photoFilter, likedFilter]);
 
   async function loadMore(overridePage?: number) {
     if (loading) return;
@@ -61,27 +63,21 @@ export default function CaptionGrid() {
 
     const currentPage = overridePage ?? page;
     const currentSort = sortByRef.current;
-    const currentFilter = filterByRef.current;
+    const currentPhoto = photoFilterRef.current;
+    const currentLiked = likedFilterRef.current;
+
+    // Use inner join for "photo" — guarantees image record exists
+    // Use left join for "all" and "nophoto" so we include image-less captions too
+    const joinType = currentPhoto === "photo" ? "images!inner(url)" : "images(url)";
 
     let query = supabase
       .from("captions")
-      .select(`
-        id,
-        content,
-        like_count,
-        images (
-          url
-        )
-      `)
+      .select(`id, content, like_count, ${joinType}`)
       .eq("is_public", true)
       .not("content", "is", null)
       .neq("content", "");
 
-    if (currentFilter === "photo") {
-      // inner join equivalent: only captions that have a real image URL
-      query = (query as any).not("images.url", "is", null);
-    }
-    if (currentFilter === "liked") {
+    if (currentLiked === "liked") {
       query = query.gt("like_count", 0);
     }
 
@@ -92,11 +88,14 @@ export default function CaptionGrid() {
     if (error) {
       console.error("Caption load error:", error);
     } else if (data) {
-      setCaptions((prev) => currentPage === 0 ? data : [...prev, ...data]);
+      // For "nophoto": client-side filter (captions where image URL is absent)
+      const filtered = currentPhoto === "nophoto"
+        ? data.filter((c: any) => !c.images?.url)
+        : data;
+
+      setCaptions((prev) => currentPage === 0 ? filtered : [...prev, ...filtered]);
       setPage(currentPage + 1);
-      if (data.length < PAGE_SIZE) {
-        setHasMore(false);
-      }
+      if (data.length < PAGE_SIZE) setHasMore(false);
     }
 
     setLoading(false);
@@ -254,42 +253,85 @@ export default function CaptionGrid() {
           </p>
         </div>
 
-        {/* ── Controls: filter + sort ───────────────────────────────────── */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          {/* Filter toggle */}
-          <div style={{ display: "flex", border: "1px solid #6a6a6a", borderRadius: 2 }}>
-            {(["all", "photo", "liked"] as const).map((mode) => (
-              <motion.button
-                key={mode}
-                onClick={() => setFilterBy(mode)}
-                whileHover={filterBy !== mode ? { color: "#f5c518" } : {}}
-                whileTap={{ scale: 0.95 }}
-                transition={{ duration: 0.15 }}
-                style={{
-                  padding: "7px 14px",
-                  background: filterBy === mode ? "#f5c518" : "transparent",
-                  color: filterBy === mode ? "#0c0c0c" : "#c8c4bc",
-                  border: "none",
-                  borderLeft: mode !== "all" ? "1px solid #3a3a3a" : "none",
-                  borderRadius: 2,
-                  fontFamily: "monospace",
-                  fontSize: 9,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  cursor: "pointer",
-                  fontWeight: filterBy === mode ? 700 : 400,
-                  transition: "background 0.15s, color 0.15s",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {mode === "all" ? "All" : mode === "photo" ? "📷 Photo" : "★ Liked"}
-              </motion.button>
-            ))}
+        {/* ── Controls ─────────────────────────────────────────────────── */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+
+          {/* Row 1: Photo + Votes filters */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+
+            {/* Photo filter */}
+            <div style={{ display: "flex", border: "1px solid #6a6a6a", borderRadius: 2 }}>
+              {([
+                { val: "all",     label: "All" },
+                { val: "photo",   label: "📷 With Photo" },
+                { val: "nophoto", label: "🚫 No Photo" },
+              ] as const).map(({ val, label }, i) => (
+                <motion.button
+                  key={val}
+                  onClick={() => setPhotoFilter(val)}
+                  whileHover={photoFilter !== val ? { color: "#f5c518" } : {}}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  style={{
+                    padding: "7px 12px",
+                    background: photoFilter === val ? "#f5c518" : "transparent",
+                    color: photoFilter === val ? "#0c0c0c" : "#c8c4bc",
+                    border: "none",
+                    borderLeft: i > 0 ? "1px solid #3a3a3a" : "none",
+                    borderRadius: 2,
+                    fontFamily: "monospace",
+                    fontSize: 9,
+                    letterSpacing: "0.16em",
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                    fontWeight: photoFilter === val ? 700 : 400,
+                    transition: "background 0.15s, color 0.15s",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {label}
+                </motion.button>
+              ))}
+            </div>
+
+            {/* Liked filter */}
+            <div style={{ display: "flex", border: "1px solid #6a6a6a", borderRadius: 2 }}>
+              {([
+                { val: "all",   label: "All Votes" },
+                { val: "liked", label: "★ Liked" },
+              ] as const).map(({ val, label }, i) => (
+                <motion.button
+                  key={val}
+                  onClick={() => setLikedFilter(val)}
+                  whileHover={likedFilter !== val ? { color: "#f5c518" } : {}}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  style={{
+                    padding: "7px 14px",
+                    background: likedFilter === val ? "#f5c518" : "transparent",
+                    color: likedFilter === val ? "#0c0c0c" : "#c8c4bc",
+                    border: "none",
+                    borderLeft: i > 0 ? "1px solid #3a3a3a" : "none",
+                    borderRadius: 2,
+                    fontFamily: "monospace",
+                    fontSize: 9,
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                    fontWeight: likedFilter === val ? 700 : 400,
+                    transition: "background 0.15s, color 0.15s",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {label}
+                </motion.button>
+              ))}
+            </div>
           </div>
 
-          {/* Sort toggle */}
+          {/* Row 2: Sort */}
           <div style={{ display: "flex", border: "1px solid #6a6a6a", borderRadius: 2 }}>
-            {(["newest", "top"] as const).map((mode) => (
+            {(["newest", "top"] as const).map((mode, i) => (
               <motion.button
                 key={mode}
                 onClick={() => setSortBy(mode)}
@@ -301,6 +343,7 @@ export default function CaptionGrid() {
                   background: sortBy === mode ? "#f5c518" : "transparent",
                   color: sortBy === mode ? "#0c0c0c" : "#c8c4bc",
                   border: "none",
+                  borderLeft: i > 0 ? "1px solid #3a3a3a" : "none",
                   borderRadius: 2,
                   fontFamily: "monospace",
                   fontSize: 9,
