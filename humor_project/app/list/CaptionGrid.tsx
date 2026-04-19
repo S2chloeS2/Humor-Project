@@ -53,12 +53,12 @@ export default function CaptionGrid() {
     setCaptions([]);
     setPage(0);
     setHasMore(true);
-    loadMore(0);
+    loadMore(0, true); // force=true bypasses the loading guard on reset
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortBy, voteFilter]);
 
-  async function loadMore(overridePage?: number) {
-    if (loading) return;
+  async function loadMore(overridePage?: number, force = false) {
+    if (loading && !force) return;
     setLoading(true);
 
     const currentPage = overridePage ?? page;
