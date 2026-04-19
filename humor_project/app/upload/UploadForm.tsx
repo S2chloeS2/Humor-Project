@@ -113,6 +113,15 @@ export default function UploadForm() {
     navigator.clipboard.writeText(text).then(() => {
       setCopiedId(index);
       setTimeout(() => setCopiedId(null), 2000);
+    }).catch(() => {
+      const el = document.createElement("textarea");
+      el.value = text;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setCopiedId(index);
+      setTimeout(() => setCopiedId(null), 2000);
     });
   }
 

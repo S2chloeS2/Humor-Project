@@ -47,6 +47,16 @@ export default function CaptionCard({
     navigator.clipboard.writeText(content).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      // clipboard denied — fallback: select text
+      const el = document.createElement("textarea");
+      el.value = content;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     });
   }
 
