@@ -14,7 +14,6 @@ export default function CaptionGrid() {
   const [userId, setUserId] = useState<string | null>(null);
   const [userVotes, setUserVotes] = useState<Record<string, number>>({});
   const [sortBy, setSortBy] = useState<"newest" | "top">("newest");
-  const [photoFilter, setPhotoFilter] = useState<"all" | "photo" | "nophoto">("all");
   const [voteFilter, setVoteFilter] = useState<"all" | "my-votes" | "upvoted" | "downvoted">("all");
   const [voteDropdownOpen, setVoteDropdownOpen] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -22,8 +21,6 @@ export default function CaptionGrid() {
   const supabase = createClient();
   const sortByRef = useRef(sortBy);
   sortByRef.current = sortBy;
-  const photoFilterRef = useRef(photoFilter);
-  photoFilterRef.current = photoFilter;
   const voteFilterRef = useRef(voteFilter);
   voteFilterRef.current = voteFilter;
   const userVotesRef = useRef(userVotes);
@@ -58,7 +55,7 @@ export default function CaptionGrid() {
     setHasMore(true);
     loadMore(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortBy, photoFilter, voteFilter]);
+  }, [sortBy, voteFilter]);
 
   async function loadMore(overridePage?: number) {
     if (loading) return;
@@ -66,20 +63,12 @@ export default function CaptionGrid() {
 
     const currentPage = overridePage ?? page;
     const currentSort = sortByRef.current;
-    const currentPhoto = photoFilterRef.current;
     const currentVote = voteFilterRef.current;
     const currentVotes = userVotesRef.current;
 
-    // "nophoto" needs left join to include captions without image records
-    // "all" and "photo" use inner join (proven to work, only returns captions with images)
-    const isNophoto = currentPhoto === "nophoto";
-    const joinClause = isNophoto
-      ? "id, content, like_count, images!left(url)"
-      : "id, content, like_count, images!inner(url)";
-
     let query = supabase
       .from("captions")
-      .select(joinClause)
+      .select("id, content, like_count, images!inner(url)")
       .eq("is_public", true)
       .not("content", "is", null)
       .neq("content", "");
@@ -112,24 +101,7 @@ export default function CaptionGrid() {
     }
 
     if (data) {
-      // Normalize image URL — handle both object {url} and array [{url}] from Supabase
-      const normalize = (c: any) => {
-        const raw = c.images;
-        const rawUrl = Array.isArray(raw) ? raw[0]?.url : raw?.url;
-        const url = typeof rawUrl === "string" && rawUrl.startsWith("http") ? rawUrl : null;
-        return { ...c, _imageUrl: url };
-      };
-
-      let normalized = data.map(normalize);
-
-      // Photo filter — client-side after normalize so URL validity is fully known
-      if (currentPhoto === "photo") {
-        normalized = normalized.filter((c) => c._imageUrl !== null);
-      } else if (currentPhoto === "nophoto") {
-        normalized = normalized.filter((c) => c._imageUrl === null);
-      }
-
-      setCaptions((prev) => currentPage === 0 ? normalized : [...prev, ...normalized]);
+      setCaptions((prev) => currentPage === 0 ? data : [...prev, ...data]);
       setPage(currentPage + 1);
       if (data.length < PAGE_SIZE) setHasMore(false);
     }
@@ -290,45 +262,7 @@ export default function CaptionGrid() {
         </div>
 
         {/* ── Controls ─────────────────────────────────────────────────── */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-
-          {/* Row 1: Photo + Votes filters */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-
-            {/* Photo filter */}
-            <div style={{ display: "flex", border: "1px solid #6a6a6a", borderRadius: 2 }}>
-              {([
-                { val: "all",     label: "All" },
-                { val: "photo",   label: "📷 With Photo" },
-                { val: "nophoto", label: "🚫 No Photo" },
-              ] as const).map(({ val, label }, i) => (
-                <motion.button
-                  key={val}
-                  onClick={() => setPhotoFilter(val)}
-                  whileHover={photoFilter !== val ? { color: "#f5c518" } : {}}
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  style={{
-                    padding: "7px 12px",
-                    background: photoFilter === val ? "#f5c518" : "transparent",
-                    color: photoFilter === val ? "#0c0c0c" : "#c8c4bc",
-                    border: "none",
-                    borderLeft: i > 0 ? "1px solid #3a3a3a" : "none",
-                    borderRadius: 2,
-                    fontFamily: "monospace",
-                    fontSize: 9,
-                    letterSpacing: "0.16em",
-                    textTransform: "uppercase",
-                    cursor: "pointer",
-                    fontWeight: photoFilter === val ? 700 : 400,
-                    transition: "background 0.15s, color 0.15s",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {label}
-                </motion.button>
-              ))}
-            </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
 
             {/* Vote filter dropdown — only shown when logged in */}
             {userId && (() => {
@@ -414,9 +348,8 @@ export default function CaptionGrid() {
                 </div>
               );
             })()}
-          </div>
 
-          {/* Row 2: Sort */}
+          {/* Sort */}
           <div style={{ display: "flex", border: "1px solid #6a6a6a", borderRadius: 2 }}>
             {(["newest", "top"] as const).map((mode, i) => (
               <motion.button
@@ -460,7 +393,7 @@ export default function CaptionGrid() {
           <CaptionCard
             key={`${c.id}-${idx}`}
             captionId={c.id}
-            imageUrl={c._imageUrl ?? undefined}
+            imageUrl={c.images?.url}
             content={c.content}
             likes={c.like_count}
             isLoggedIn={!!userId}
