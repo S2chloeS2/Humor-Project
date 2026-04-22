@@ -14,6 +14,7 @@ export default function CaptionGrid() {
   const [userId, setUserId] = useState<string | null>(null);
   const [userVotes, setUserVotes] = useState<Record<string, number>>({});
   const [sortBy, setSortBy] = useState<"newest" | "top">("newest");
+  const [photoFilter, setPhotoFilter] = useState<"all" | "photo" | "nophoto">("all");
   const [voteFilter, setVoteFilter] = useState<"all" | "my-votes" | "upvoted" | "downvoted">("all");
   const [voteDropdownOpen, setVoteDropdownOpen] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -21,6 +22,8 @@ export default function CaptionGrid() {
   const supabase = createClient();
   const sortByRef = useRef(sortBy);
   sortByRef.current = sortBy;
+  const photoFilterRef = useRef(photoFilter);
+  photoFilterRef.current = photoFilter;
   const voteFilterRef = useRef(voteFilter);
   voteFilterRef.current = voteFilter;
   const userVotesRef = useRef(userVotes);
@@ -55,7 +58,14 @@ export default function CaptionGrid() {
     setHasMore(true);
     loadMore(0, true); // force=true bypasses the loading guard on reset
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortBy, voteFilter]);
+  }, [sortBy, photoFilter, voteFilter]);
+
+  // Helper: extract image URL from Supabase response (array or object)
+  function getImageUrl(images: any): string | null {
+    if (!images) return null;
+    const url = Array.isArray(images) ? images[0]?.url : images?.url;
+    return typeof url === "string" && url.startsWith("http") ? url : null;
+  }
 
   async function loadMore(overridePage?: number, force = false) {
     if (loading && !force) return;
@@ -63,12 +73,19 @@ export default function CaptionGrid() {
 
     const currentPage = overridePage ?? page;
     const currentSort = sortByRef.current;
+    const currentPhoto = photoFilterRef.current;
     const currentVote = voteFilterRef.current;
     const currentVotes = userVotesRef.current;
 
+    // nophoto needs left join to include captions with no image record
+    // photo/all use inner join (only captions that have an image record)
+    const selectStr = currentPhoto === "nophoto"
+      ? "id, content, like_count, images(url)"
+      : "id, content, like_count, images!inner(url)";
+
     let query = supabase
       .from("captions")
-      .select("id, content, like_count, images!inner(url)")
+      .select(selectStr)
       .eq("is_public", true)
       .not("content", "is", null)
       .neq("content", "");
@@ -101,7 +118,17 @@ export default function CaptionGrid() {
     }
 
     if (data) {
-      setCaptions((prev) => currentPage === 0 ? data : [...prev, ...data]);
+      // Attach normalized _imageUrl to each caption
+      let normalized = data.map((c: any) => ({ ...c, _imageUrl: getImageUrl(c.images) }));
+
+      // Client-side photo filter using the now-correct URL
+      if (currentPhoto === "photo") {
+        normalized = normalized.filter((c) => c._imageUrl !== null);
+      } else if (currentPhoto === "nophoto") {
+        normalized = normalized.filter((c) => c._imageUrl === null);
+      }
+
+      setCaptions((prev) => currentPage === 0 ? normalized : [...prev, ...normalized]);
       setPage(currentPage + 1);
       if (data.length < PAGE_SIZE) setHasMore(false);
     }
@@ -264,7 +291,42 @@ export default function CaptionGrid() {
         {/* ── Controls ─────────────────────────────────────────────────── */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
 
-            {/* Vote filter dropdown — only shown when logged in */}
+          {/* Photo filter */}
+          <div style={{ display: "flex", border: "1px solid #6a6a6a", borderRadius: 2 }}>
+            {([
+              { val: "all",     label: "All" },
+              { val: "photo",   label: "📷 Photo" },
+              { val: "nophoto", label: "🚫 No Photo" },
+            ] as const).map(({ val, label }, i) => (
+              <motion.button
+                key={val}
+                onClick={() => setPhotoFilter(val)}
+                whileHover={photoFilter !== val ? { color: "#f5c518" } : {}}
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                style={{
+                  padding: "7px 12px",
+                  background: photoFilter === val ? "#f5c518" : "transparent",
+                  color: photoFilter === val ? "#0c0c0c" : "#c8c4bc",
+                  border: "none",
+                  borderLeft: i > 0 ? "1px solid #3a3a3a" : "none",
+                  borderRadius: 2,
+                  fontFamily: "monospace",
+                  fontSize: 9,
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  cursor: "pointer",
+                  fontWeight: photoFilter === val ? 700 : 400,
+                  transition: "background 0.15s, color 0.15s",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {label}
+              </motion.button>
+            ))}
+          </div>
+
+          {/* Vote filter dropdown — only shown when logged in */}
             {userId && (() => {
               const VOTE_OPTIONS = [
                 { val: "all",       label: "All Votes" },
@@ -393,7 +455,7 @@ export default function CaptionGrid() {
           <CaptionCard
             key={`${c.id}-${idx}`}
             captionId={c.id}
-            imageUrl={Array.isArray(c.images) ? c.images[0]?.url : c.images?.url}
+            imageUrl={c._imageUrl ?? undefined}
             content={c.content}
             likes={c.like_count}
             isLoggedIn={!!userId}
