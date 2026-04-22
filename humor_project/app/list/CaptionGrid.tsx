@@ -14,20 +14,21 @@ export default function CaptionGrid() {
   const [userId, setUserId] = useState<string | null>(null);
   const [userVotes, setUserVotes] = useState<Record<string, number>>({});
   const [sortBy, setSortBy] = useState<"newest" | "top">("newest");
-  const [photoFilter, setPhotoFilter] = useState<"all" | "photo" | "nophoto">("all");
   const [voteFilter, setVoteFilter] = useState<"all" | "my-votes" | "upvoted" | "downvoted">("all");
   const [voteDropdownOpen, setVoteDropdownOpen] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
 
   const supabase = createClient();
   const sortByRef = useRef(sortBy);
   sortByRef.current = sortBy;
-  const photoFilterRef = useRef(photoFilter);
-  photoFilterRef.current = photoFilter;
   const voteFilterRef = useRef(voteFilter);
   voteFilterRef.current = voteFilter;
   const userVotesRef = useRef(userVotes);
   userVotesRef.current = userVotes;
+  const searchQueryRef = useRef(searchQuery);
+  searchQueryRef.current = searchQuery;
 
   useEffect(() => {
     async function init() {
@@ -51,14 +52,20 @@ export default function CaptionGrid() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-fetch from scratch whenever any filter/sort changes
+  // Debounce search input → commit to searchQuery after 400ms
+  useEffect(() => {
+    const t = setTimeout(() => setSearchQuery(searchInput.trim()), 400);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  // Re-fetch from scratch whenever any filter/sort/search changes
   useEffect(() => {
     setCaptions([]);
     setPage(0);
     setHasMore(true);
     loadMore(0, true); // force=true bypasses the loading guard on reset
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortBy, photoFilter, voteFilter]);
+  }, [sortBy, voteFilter, searchQuery]);
 
   // Helper: extract image URL from Supabase response (array or object)
   function getImageUrl(images: any): string | null {
@@ -73,15 +80,11 @@ export default function CaptionGrid() {
 
     const currentPage = overridePage ?? page;
     const currentSort = sortByRef.current;
-    const currentPhoto = photoFilterRef.current;
     const currentVote = voteFilterRef.current;
     const currentVotes = userVotesRef.current;
+    const currentSearch = searchQueryRef.current;
 
-    // nophoto needs left join to include captions with no image record
-    // photo/all use inner join (only captions that have an image record)
-    const selectStr = currentPhoto === "nophoto"
-      ? "id, content, like_count, images(url)"
-      : "id, content, like_count, images!inner(url)";
+    const selectStr = "id, content, like_count, images!inner(url)";
 
     let query = supabase
       .from("captions")
@@ -107,6 +110,11 @@ export default function CaptionGrid() {
       query = query.in("id", votedIds);
     }
 
+    // Text search filter
+    if (currentSearch) {
+      query = query.ilike("content", `%${currentSearch}%`);
+    }
+
     const { data, error } = await query
       .order(currentSort === "top" ? "like_count" : "created_datetime_utc", { ascending: false })
       .range(currentPage * PAGE_SIZE, currentPage * PAGE_SIZE + PAGE_SIZE - 1);
@@ -119,14 +127,7 @@ export default function CaptionGrid() {
 
     if (data) {
       // Attach normalized _imageUrl to each caption
-      let normalized = data.map((c: any) => ({ ...c, _imageUrl: getImageUrl(c.images) }));
-
-      // Client-side photo filter using the now-correct URL
-      if (currentPhoto === "photo") {
-        normalized = normalized.filter((c) => c._imageUrl !== null);
-      } else if (currentPhoto === "nophoto") {
-        normalized = normalized.filter((c) => c._imageUrl === null);
-      }
+      const normalized = data.map((c: any) => ({ ...c, _imageUrl: getImageUrl(c.images) }));
 
       setCaptions((prev) => currentPage === 0 ? normalized : [...prev, ...normalized]);
       setPage(currentPage + 1);
@@ -291,39 +292,56 @@ export default function CaptionGrid() {
         {/* ── Controls ─────────────────────────────────────────────────── */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
 
-          {/* Photo filter */}
-          <div style={{ display: "flex", border: "1px solid #6a6a6a", borderRadius: 2 }}>
-            {([
-              { val: "all",     label: "All" },
-              { val: "photo",   label: "📷 Photo" },
-              { val: "nophoto", label: "🚫 No Photo" },
-            ] as const).map(({ val, label }, i) => (
-              <motion.button
-                key={val}
-                onClick={() => setPhotoFilter(val)}
-                whileHover={photoFilter !== val ? { color: "#f5c518" } : {}}
-                whileTap={{ scale: 0.95 }}
-                transition={{ duration: 0.15 }}
+          {/* Search input */}
+          <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+            <span style={{
+              position: "absolute",
+              left: 10,
+              color: searchInput ? "#f5c518" : "#6a6a6a",
+              fontSize: 11,
+              pointerEvents: "none",
+              transition: "color 0.15s",
+            }}>⌕</span>
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search captions…"
+              style={{
+                paddingLeft: 28,
+                paddingRight: searchInput ? 28 : 12,
+                paddingTop: 7,
+                paddingBottom: 7,
+                background: "transparent",
+                border: `1px solid ${searchInput ? "#f5c518" : "#6a6a6a"}`,
+                borderRadius: 2,
+                color: "#c8c4bc",
+                fontFamily: "monospace",
+                fontSize: 9,
+                letterSpacing: "0.12em",
+                outline: "none",
+                width: 180,
+                transition: "border-color 0.15s, width 0.2s",
+              }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "#f5c518"; e.currentTarget.style.width = "220px"; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = searchInput ? "#f5c518" : "#6a6a6a"; e.currentTarget.style.width = "180px"; }}
+            />
+            {searchInput && (
+              <button
+                onClick={() => { setSearchInput(""); setSearchQuery(""); }}
                 style={{
-                  padding: "7px 12px",
-                  background: photoFilter === val ? "#f5c518" : "transparent",
-                  color: photoFilter === val ? "#0c0c0c" : "#c8c4bc",
+                  position: "absolute",
+                  right: 8,
+                  background: "none",
                   border: "none",
-                  borderLeft: i > 0 ? "1px solid #3a3a3a" : "none",
-                  borderRadius: 2,
-                  fontFamily: "monospace",
-                  fontSize: 9,
-                  letterSpacing: "0.16em",
-                  textTransform: "uppercase",
+                  color: "#6a6a6a",
                   cursor: "pointer",
-                  fontWeight: photoFilter === val ? 700 : 400,
-                  transition: "background 0.15s, color 0.15s",
-                  whiteSpace: "nowrap",
+                  fontSize: 11,
+                  lineHeight: 1,
+                  padding: 0,
                 }}
-              >
-                {label}
-              </motion.button>
-            ))}
+              >✕</button>
+            )}
           </div>
 
           {/* Vote filter dropdown — only shown when logged in */}
