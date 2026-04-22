@@ -191,7 +191,15 @@ export default function UploadForm() {
         const msg = await r4.text().catch(() => "");
         throw new Error(`Caption generation failed (step 4).${msg ? " " + msg : ""}`);
       }
-      const generated: GeneratedCaption[] = await r4.json();
+      const raw = await r4.json();
+      // API may return an array directly, or wrap it in { captions: [...] } / { data: [...] }
+      const generated: GeneratedCaption[] = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw?.captions)
+        ? raw.captions
+        : Array.isArray(raw?.data)
+        ? raw.data
+        : [];
       setCaptions(generated);
 
     } catch (err: any) {
